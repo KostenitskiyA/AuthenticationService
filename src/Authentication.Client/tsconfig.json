@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist/",
+        "noImplicitAny": true,
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "target": "es5",
+        "jsx": "react",
+        "allowJs": true,
+        "allowSyntheticDefaultImports": true,
+        "noUncheckedIndexedAccess": true
+    },
+    "exclude": [
+      "node_modules"
+    ]
+}

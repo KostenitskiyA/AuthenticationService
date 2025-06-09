@@ -1,0 +1,24 @@
+﻿.SignUpForm {
+    display: flex;
+    margin: 0 35%;
+    flex-direction: column;
+    gap: 12px;
+
+    .InputControl {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .ButtonControl {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        .ButtonGroup {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+        }
+    }
+}
