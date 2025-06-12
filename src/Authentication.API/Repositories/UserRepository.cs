@@ -46,7 +46,7 @@ public class UserRepository(ApplicationContext dbContext) : IUserRepository
         var isUserExists = await dbContext.Users.AnyAsync(user => user.Id == entity.Id, ct);
 
         if (!isUserExists)
-            throw new DomainException($"User {entity.Email} not found", HttpStatusCode.BadRequest);
+            throw new DomainException($"User {entity.Email} not found");
         
         dbContext.Users.Update(entity);
         await dbContext.SaveChangesAsync(ct);

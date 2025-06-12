@@ -1,7 +1,10 @@
-﻿using System.Security.Claims;
+﻿using System.Net;
+using System.Security.Claims;
+using Authentication.API.Exceptions;
 using Authentication.API.Interfaces;
 using Authentication.API.Models.Dtos;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -52,30 +55,37 @@ public class AuthenticationController(
         Redirect(redirectUrl);
     }
 
-    [HttpGet("login-google")]
-    public IActionResult LoginWithGoogle([FromQuery] string redirectUrl = "/")
+    [HttpGet("google/login")]
+    public IActionResult LoginWithGoogle([FromQuery] string redirectUrl)
     {
-        var url = Url.Action(nameof(GoogleCallback), "Authentication", new { redirectUrl });
-        var properties = new AuthenticationProperties
-        {
-            RedirectUri = url
-        };
+        var request = HttpContext.Request;
         
-        return Challenge(properties, "GoogleToken");
+        var url = $"{request.Scheme}://" + 
+                  $"{request.Host}" + 
+                  $"{Url.Action(nameof(GoogleCallback), "Authentication", new { redirectUrl })}";
+        var properties = new AuthenticationProperties { RedirectUri = url };
+        
+        return Challenge(properties, GoogleDefaults.AuthenticationScheme);
     }
 
-    [HttpGet("google-callback")]
-    public async Task<IActionResult> GoogleCallback([FromQuery] string redirectUrl = "/")
+    [HttpGet("google/callback")]
+    public async Task<IActionResult> GoogleCallback([FromQuery] string redirectUrl, CancellationToken ct)
     {
-        var result = await HttpContext.AuthenticateAsync();
+        var claims = HttpContext.User.Identities.First().Claims.ToList();
 
-        if (!result.Succeeded || result.Principal == null)
-        {
-            return Unauthorized();
-        }
+        if (!claims.Any())
+            throw new DomainException("User not authorized", HttpStatusCode.Unauthorized);
 
-        var claims = result.Principal.Identities.First().Claims;
-        var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        var name = claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Name)!.Value;
+        var email = claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Email)!.Value;
+        
+        await userService.SignUpAsync(
+            HttpContext, 
+            new SignInRequest
+            {
+                Name = name,
+                Email = email
+            }, ct);
 
         return Redirect(redirectUrl);
     }

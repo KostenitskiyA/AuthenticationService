@@ -1,5 +1,6 @@
 ﻿using Authentication.API.Data;
 using Authentication.API.Models.Options;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.EntityFrameworkCore;
 
 namespace Authentication.API.Extensions;
@@ -29,11 +30,11 @@ public static class AuthenticationExtensions
                 options.Cookie.SameSite = SameSiteMode.Lax;
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(authenticationOptions.ExpiresInMinutes);
             })
-            .AddGoogle(googleAuthenticationOptions.TokenName, options =>
+            .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
             {
                 options.ClientId = googleAuthenticationOptions.ClientId;
                 options.ClientSecret = googleAuthenticationOptions.ClientSecret;
-                options.CallbackPath = "/signin-google";
+                options.CallbackPath = "/google-callback";
             });
 
         return services;

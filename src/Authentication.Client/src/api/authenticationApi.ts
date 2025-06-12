@@ -5,27 +5,21 @@ export const authenticationApi = createApi({
     reducerPath: 'authenticationApi',
     baseQuery: fetchBaseQuery({ baseUrl: `${getEnvConfig().apiBaseUrl}/authentication/` }),
     endpoints: (build) => ({
-        logIn: build.query<void, ILogInRequest>({
+        signUp: build.query<void, { request: ISignUpRequest; redirectUrl: string }>({
             query: (data) => ({
-                url: `login?redirectUrl=${getEnvConfig().clientBaseUrl}/status/`,
+                url: `signup?redirectUrl=${data.redirectUrl}`,
                 method: 'POST',
-                body: data,
+                body: data.request,
             }),
         }),
-        signUp: build.query<void, ISignUpRequest>({
+        logIn: build.query<void, { request: ILogInRequest; redirectUrl: string }>({
             query: (data) => ({
-                url: `signup?redirectUrl=${getEnvConfig().clientBaseUrl}/status/`,
+                url: `login?redirectUrl=${data.redirectUrl}`,
                 method: 'POST',
-                body: data,
-            }),
-        }),
-        logInGoogle: build.query<void, void>({
-            query: () => ({
-                url: `login-google?redirectUrl=${getEnvConfig().clientBaseUrl}/status/`,
-                method: 'GET',
+                body: data.request,
             }),
         }),
     }),
 });
 
-export const { useLazyLogInQuery, useLazySignUpQuery, useLazyLogInGoogleQuery } = authenticationApi;
+export const { useLazySignUpQuery, useLazyLogInQuery } = authenticationApi;

@@ -1,5 +1,4 @@
-﻿using System.Net;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Authentication.API.Exceptions;
 using Authentication.API.Interfaces;
 using Authentication.API.Models.Dtos;
@@ -36,14 +35,16 @@ public class UserService(
         var isUserExists = await userRepository.IsExistsAsync(user => user.Email == request.Email, ct);
 
         if (isUserExists)
-            throw new DomainException($"User {request.Email} already exist", HttpStatusCode.BadRequest);
+            throw new DomainException($"User {request.Email} already exist");
 
         var user = await userRepository.AddAsync(
             new User
             {
                 Name = request.Name,
                 Email = request.Email,
-                Password = BCrypt.Net.BCrypt.HashPassword(request.Password)
+                Password = !string.IsNullOrEmpty(request.Password) 
+                    ? BCrypt.Net.BCrypt.HashPassword(request.Password) 
+                    : string.Empty
             }, ct);
 
         await context.SignInAsync(CreateUserClaims(user));
@@ -56,16 +57,16 @@ public class UserService(
         var user = await userRepository.GetByEmailAsync(request.Email, ct);
 
         if (user is null)
-            throw new DomainException($"User {request.Email} not found", HttpStatusCode.BadRequest);
+            throw new DomainException($"User {request.Email} not found");
 
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
-            throw new DomainException($"User {request.Email} password invalid", HttpStatusCode.BadRequest);
+            throw new DomainException($"User {request.Email} password invalid");
 
         await context.SignInAsync(CreateUserClaims(user));
 
         return user;
     }
-    
+
     public async Task LogOutAsync(HttpContext context, CancellationToken ct)
     {
         await context.SignOutAsync();
@@ -76,13 +77,13 @@ public class UserService(
         var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
 
         if (string.IsNullOrEmpty(email))
-            throw new DomainException("Email not found", HttpStatusCode.BadRequest);
-        
+            throw new DomainException("User not authorized");
+
         var user = await userRepository.GetByEmailAsync(email, ct);
-        
+
         if (user is null)
-            throw new DomainException($"User {email} not found", HttpStatusCode.BadRequest);
-        
+            throw new DomainException($"User {email} not found");
+
         await userRepository.DeleteAsync(user, ct);
         await LogOutAsync(context, ct);
     }

@@ -18,8 +18,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowLocalhost", policy =>
     {
         policy.SetIsOriginAllowed(origin =>
-                origin.StartsWith("http://localhost") 
-               || origin.StartsWith("https://localhost"))
+                origin.StartsWith("http://localhost")
+                || origin.StartsWith("https://localhost"))
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
