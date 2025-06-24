@@ -2,8 +2,6 @@
 
 public record AuthenticationOptions
 {
-    public required string TokenName { get; init; }
-
     public required string Key { get; init; }
 
     public required string Issuer { get; init; }

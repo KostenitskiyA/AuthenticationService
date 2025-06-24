@@ -1,16 +1,13 @@
 ﻿import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLazySignUpQuery } from '../../api/authenticationApi';
+import { googleLogInQuery } from '../../api/googleApi';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import styles from './SignUpPage.module.scss';
 
 const SignUpPage = () => {
-    const location = useLocation();
     const navigate = useNavigate();
-
-    const queryParams = new URLSearchParams(location.search);
-    const redirectUrl = queryParams.get('redirectUrl');
 
     const [signUp] = useLazySignUpQuery();
     const [name, setName] = useState<string>();
@@ -20,8 +17,9 @@ const SignUpPage = () => {
     const onNameInput = (value: string) => setName(value);
     const onEmailInput = (value: string) => setEmail(value);
     const onPasswordInput = (value: string) => setPassword(value);
-    const onSignUp = async () => await signUp({ request: { name, email, password }, redirectUrl });
-    const onLogIn = () => navigate('/login');
+    const onSignUp = async () => await signUp({ name, email, password });
+    const onGoogleLogIn = () => googleLogInQuery();
+    const onLogIn = () => navigate(`/login`);
 
     return (
         <div className={styles.SignUpForm}>
@@ -49,6 +47,7 @@ const SignUpPage = () => {
             </div>
             <div className={styles.ButtonControl}>
                 <Button label="Sign up" onClick={onSignUp} />
+                <Button icon="pi pi-google" label="Login with Google" onClick={onGoogleLogIn} />
                 <Button link label="Log in" onClick={onLogIn} />
             </div>
         </div>
