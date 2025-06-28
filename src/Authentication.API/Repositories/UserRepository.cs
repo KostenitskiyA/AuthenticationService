@@ -1,5 +1,4 @@
 ﻿using System.Linq.Expressions;
-using System.Net;
 using Authentication.API.Data;
 using Authentication.API.Exceptions;
 using Authentication.API.Interfaces;
@@ -15,21 +14,21 @@ public class UserRepository(ApplicationContext dbContext) : IUserRepository
     public async Task<bool> IsExistsAsync(Expression<Func<User, bool>> expression, CancellationToken ct)
     {
         var isUserExists = await dbContext.Users.AnyAsync(expression, ct);
-        
+
         return isUserExists;
     }
-    
+
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         var user = await dbContext.Users.FirstOrDefaultAsync(user => user.Id == id, ct);
-        
+
         return user;
     }
-    
+
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct)
     {
         var user = await dbContext.Users.FirstOrDefaultAsync(user => user.Email == email, ct);
-        
+
         return user;
     }
 
@@ -40,18 +39,18 @@ public class UserRepository(ApplicationContext dbContext) : IUserRepository
 
         return user.Entity;
     }
-    
+
     public async Task UpdateAsync(User entity, CancellationToken ct)
     {
         var isUserExists = await dbContext.Users.AnyAsync(user => user.Id == entity.Id, ct);
 
         if (!isUserExists)
             throw new DomainException($"User {entity.Email} not found");
-        
+
         dbContext.Users.Update(entity);
         await dbContext.SaveChangesAsync(ct);
     }
-    
+
     public async Task DeleteAsync(User entity, CancellationToken ct)
     {
         dbContext.Users.Remove(entity);

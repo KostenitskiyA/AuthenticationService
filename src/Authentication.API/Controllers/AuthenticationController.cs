@@ -23,7 +23,7 @@ public class AuthenticationController(
         logger.LogInformation("{Email} try to sign up", request.Email);
         await userService.SignUpAsync(HttpContext, request, ct);
         logger.LogInformation("{Email} sign up", request.Email);
-        
+
         return Ok();
     }
 
@@ -33,7 +33,7 @@ public class AuthenticationController(
         logger.LogInformation("{Email} try to login", request.Email);
         await userService.LogInAsync(HttpContext, request, ct);
         logger.LogInformation("{Email} login", request.Email);
-        
+
         return Ok();
     }
 
@@ -42,7 +42,7 @@ public class AuthenticationController(
     public async Task<IActionResult> LogOut(CancellationToken ct)
     {
         await userService.LogOutAsync(HttpContext, ct);
-        
+
         return Ok();
     }
 
@@ -51,19 +51,19 @@ public class AuthenticationController(
     public async Task<IActionResult> DeleteAsync(CancellationToken ct)
     {
         await userService.DeleteAsync(HttpContext, ct);
-        
+
         return Ok();
     }
-    
+
     [Authorize]
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
         await userService.RefreshAsync(HttpContext, ct);
-    
+
         return Ok();
     }
-    
+
     [HttpGet("google/login")]
     public IActionResult LoginWithGoogle()
     {
@@ -71,7 +71,7 @@ public class AuthenticationController(
         {
             RedirectUri = Url.Action(nameof(GoogleCallback), "Authentication")
         };
-        
+
         return Challenge(properties, GoogleDefaults.AuthenticationScheme);
     }
 
@@ -82,9 +82,9 @@ public class AuthenticationController(
 
         if (!claims.Any())
             throw new DomainException("User not authorized", HttpStatusCode.Unauthorized);
-        
+
         await userService.SignUpAsync(
-            HttpContext, 
+            HttpContext,
             new SignInRequest
             {
                 Name = claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Name)!.Value,

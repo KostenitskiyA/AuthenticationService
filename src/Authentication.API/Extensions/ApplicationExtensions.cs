@@ -12,6 +12,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using Serilog.Events;
 using Serilog.Sinks.Grafana.Loki;
 
 namespace Authentication.API.Extensions;
@@ -22,23 +23,23 @@ public static class ApplicationExtensions
     {
         var host = builder.Host;
         var services = builder.Services;
-        
+
         var otelConfiguration = services.ConfigureOptions<OpenTelemetryConfiguration>(configuration);
-        
+
         host.UseSerilog((_, _, loggerConfiguration) =>
         {
             loggerConfiguration
                 .MinimumLevel.Information()
-                .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
-                .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("System", LogEventLevel.Warning)
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
                 .WriteTo.GrafanaLoki(
-                    uri: otelConfiguration.LokiUrl,
-                    labels: [new LokiLabel { Key = "app", Value = otelConfiguration.ServiceName }]
+                    otelConfiguration.LokiUrl,
+                    [new LokiLabel { Key = "app", Value = otelConfiguration.ServiceName }]
                 );
         });
-        
+
         services.AddOpenTelemetry()
             .WithTracing(tracerProvider =>
             {
@@ -92,9 +93,7 @@ public static class ApplicationExtensions
                     OnMessageReceived = context =>
                     {
                         if (context.Request.Cookies.TryGetValue(JwtBearerDefaults.AuthenticationScheme, out var token))
-                        {
                             context.Token = token;
-                        }
 
                         return Task.CompletedTask;
                     }
@@ -120,7 +119,7 @@ public static class ApplicationExtensions
 
         if (string.IsNullOrEmpty(connectionString))
             throw new Exception("DefaultConnection section not found");
-        
+
         healthChecksBuilder.AddNpgSql(connectionString);
         services.AddDbContext<ApplicationContext>(options => options.UseNpgsql(connectionString));
 

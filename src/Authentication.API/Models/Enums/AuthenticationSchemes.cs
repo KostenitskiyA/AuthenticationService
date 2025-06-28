@@ -3,6 +3,6 @@
 public static class AuthenticationSchemes
 {
     public const string Token = "Bearer";
-    
+
     public const string RefreshToken = "Refresh";
 }

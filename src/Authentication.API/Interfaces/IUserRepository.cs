@@ -15,7 +15,7 @@ public interface IUserRepository
     Task<User?> GetByEmailAsync(string email, CancellationToken ct);
 
     Task<User> AddAsync(User entity, CancellationToken ct);
-    
+
     Task UpdateAsync(User entity, CancellationToken ct);
 
     Task DeleteAsync(User entity, CancellationToken ct);

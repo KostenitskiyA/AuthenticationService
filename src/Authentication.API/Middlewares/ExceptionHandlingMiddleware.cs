@@ -15,7 +15,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
             ? Task.CompletedTask
             : context.Response.WriteAsync(content);
     }
-    
+
     public async Task InvokeAsync(HttpContext context)
     {
         try
