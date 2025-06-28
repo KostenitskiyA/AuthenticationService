@@ -12,4 +12,6 @@ public interface IUserService
     Task LogOutAsync(HttpContext context, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(HttpContext context, CancellationToken cancellationToken = default);
+    
+    Task RefreshAsync(HttpContext context, CancellationToken cancellationToken = default);
 }

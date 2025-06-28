@@ -3,6 +3,15 @@ version: '3.9'
 name: authentication-service
 
 services:
+  redis:
+    image: 'redis:latest'
+    container_name: 'redis'
+    ports:
+      - '8201:6379'
+    restart: always
+    volumes:
+      - redis:/var/lib/redis
+  
   postgres:
     container_name: 'postgres'
     image: 'postgres:latest'
@@ -26,6 +35,15 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
 
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus:/var/lib/prometheus
+
   grafana:
     container_name: grafana
     image: grafana/grafana:latest
@@ -37,20 +55,36 @@ services:
     volumes:
       - grafana:/var/lib/grafana
 
-  prometheus:
-    container_name: prometheus
-    image: prom/prometheus:latest
+  loki:
+    container_name: loki
+    image: grafana/loki:2.9.2
     ports:
-      - '9090:9090'
+      - '3100:3100'
+    command: -config.file=/etc/loki/local-config.yaml
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus:/var/lib/prometheus
-        
+      - loki:/loki
+
+  tempo:
+    container_name: tempo
+    image: grafana/tempo:2.4.1
+    ports:
+      - '3200:3200'
+      - '4317:4317'
+      - '4318:4318'
+      - '9411:9411'
+    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
+    volumes:
+      - ./tempo.yaml:/etc/tempo/tempo.yaml
+      - tempo:/tmp/tempo
+
 networks:
   default:
     name: authentication-service
 
 volumes:
+  redis:
   postgres:
   prometheus:
   grafana:
+  loki:
+  tempo:

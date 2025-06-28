@@ -8,5 +8,7 @@ public record AuthenticationOptions
 
     public required string Audience { get; init; }
 
-    public required int ExpiresInMinutes { get; init; }
+    public required int TokenExpiresInMinutes { get; init; }
+    
+    public required int RefreshTokenExpiresInMinutes { get; init; }
 }

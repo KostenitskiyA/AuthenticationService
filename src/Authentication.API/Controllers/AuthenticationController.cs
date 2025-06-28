@@ -18,35 +18,52 @@ public class AuthenticationController(
 ) : ControllerBase
 {
     [HttpPost("signup")]
-    public async Task SignUp([FromBody] SignInRequest request, CancellationToken ct)
+    public async Task<IActionResult> SignUp([FromBody] SignInRequest request, CancellationToken ct)
     {
         logger.LogInformation("{Email} try to sign up", request.Email);
         await userService.SignUpAsync(HttpContext, request, ct);
         logger.LogInformation("{Email} sign up", request.Email);
+        
+        return Ok();
     }
 
     [HttpPost("login")]
-    public async Task LogIn([FromBody] LogInRequest request, CancellationToken ct)
+    public async Task<IActionResult> LogIn([FromBody] LogInRequest request, CancellationToken ct)
     {
         logger.LogInformation("{Email} try to login", request.Email);
         await userService.LogInAsync(HttpContext, request, ct);
         logger.LogInformation("{Email} login", request.Email);
+        
+        return Ok();
     }
 
     [Authorize]
     [HttpDelete("logout")]
-    public async Task LogOut(CancellationToken ct)
+    public async Task<IActionResult> LogOut(CancellationToken ct)
     {
         await userService.LogOutAsync(HttpContext, ct);
+        
+        return Ok();
     }
 
     [Authorize]
     [HttpDelete("delete")]
-    public async Task DeleteAsync(CancellationToken ct)
+    public async Task<IActionResult> DeleteAsync(CancellationToken ct)
     {
         await userService.DeleteAsync(HttpContext, ct);
+        
+        return Ok();
     }
-
+    
+    [Authorize]
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(CancellationToken ct)
+    {
+        await userService.RefreshAsync(HttpContext, ct);
+    
+        return Ok();
+    }
+    
     [HttpGet("google/login")]
     public IActionResult LoginWithGoogle()
     {

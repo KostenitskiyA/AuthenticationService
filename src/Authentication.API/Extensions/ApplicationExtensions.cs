@@ -8,25 +8,66 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using Serilog;
+using Serilog.Sinks.Grafana.Loki;
 
 namespace Authentication.API.Extensions;
 
 public static class ApplicationExtensions
 {
+    public static IServiceCollection AddOTEL(this WebApplicationBuilder builder, IConfiguration configuration)
+    {
+        var host = builder.Host;
+        var services = builder.Services;
+        
+        var otelConfiguration = services.ConfigureOptions<OpenTelemetryConfiguration>(configuration);
+        
+        host.UseSerilog((_, _, loggerConfiguration) =>
+        {
+            loggerConfiguration
+                .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+                .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
+                .Enrich.FromLogContext()
+                .WriteTo.Console()
+                .WriteTo.GrafanaLoki(
+                    uri: otelConfiguration.LokiUrl,
+                    labels: [new LokiLabel { Key = "app", Value = otelConfiguration.ServiceName }]
+                );
+        });
+        
+        services.AddOpenTelemetry()
+            .WithTracing(tracerProvider =>
+            {
+                tracerProvider
+                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddOtlpExporter(options => { options.Endpoint = new Uri(otelConfiguration.TempoUrl); });
+            })
+            .WithMetrics(metricsProvider =>
+            {
+                metricsProvider
+                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
+                    .AddRuntimeInstrumentation()
+                    .AddProcessInstrumentation()
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddPrometheusExporter();
+            });
+
+        return services;
+    }
+
     public static IServiceCollection AddAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        var section = configuration.GetSection(nameof(AuthenticationConfiguration));
-        if (section is null)
-            throw new Exception($"{nameof(AuthenticationConfiguration)} section not found");
-
-        var authenticationConfiguration = section.Get<AuthenticationConfiguration>();
-        if (authenticationConfiguration is null)
-            throw new Exception($"{nameof(AuthenticationConfiguration)} options not found");
-
+        var authenticationConfiguration = services.ConfigureOptions<AuthenticationConfiguration>(configuration);
         var authenticationOptions = authenticationConfiguration.AuthenticationOptions;
         var googleAuthenticationOptions = authenticationConfiguration.GoogleAuthenticationOptions;
 
-        services.Configure<AuthenticationConfiguration>(section);
         services.AddAuthentication(options =>
             {
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -71,21 +112,21 @@ public static class ApplicationExtensions
     }
 
     public static IServiceCollection AddDatabase(
-        this IServiceCollection services, 
-        IConfiguration configuration, 
+        this IServiceCollection services,
+        IConfiguration configuration,
         IHealthChecksBuilder healthChecksBuilder)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         if (string.IsNullOrEmpty(connectionString))
-            throw new Exception();
-
+            throw new Exception("DefaultConnection section not found");
+        
         healthChecksBuilder.AddNpgSql(connectionString);
         services.AddDbContext<ApplicationContext>(options => options.UseNpgsql(connectionString));
 
         return services;
     }
-    
+
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddTransient<IUserRepository, UserRepository>();
