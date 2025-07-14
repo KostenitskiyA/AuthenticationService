@@ -22,11 +22,29 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         {
             await next(context);
         }
+        catch (NotAuthorizedException exception)
+        {
+            logger.LogError(exception, exception.Message);
+            await HandleExceptionAsync(
+                context,
+                exception.StatusCode,
+                JsonSerializer.Serialize(new { message = exception.Message }));
+        }
+        catch (EntityNotFoundException exception)
+        {
+            logger.LogError(exception, exception.Message);
+            await HandleExceptionAsync(
+                context,
+                exception.StatusCode,
+                JsonSerializer.Serialize(new { message = exception.Message }));
+        }
         catch (DomainException exception)
         {
             logger.LogError(exception, exception.Message);
-            var content = JsonSerializer.Serialize(new { message = exception.Message });
-            await HandleExceptionAsync(context, exception.StatusCode, content);
+            await HandleExceptionAsync(
+                context,
+                exception.StatusCode,
+                JsonSerializer.Serialize(new { message = exception.Message }));
         }
         catch (Exception exception)
         {

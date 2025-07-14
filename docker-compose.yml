@@ -34,6 +34,14 @@ services:
       - '5000:8080'
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
+  
+#  client:
+#    container_name: 'client'
+#    build:
+#      context: './src/Authentication.Client'
+#      dockerfile: 'Dockerfile'
+#    ports:
+#      - '5001:4173'
 
   prometheus:
     container_name: prometheus
@@ -62,6 +70,7 @@ services:
       - '3100:3100'
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
       - loki:/loki
 
   tempo:

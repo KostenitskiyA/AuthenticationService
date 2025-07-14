@@ -4,8 +4,12 @@
   "type": "module",
   "main": "index.jsx",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "build:development": "vite build --mode development",
+    "deploy:development": "vite --mode development",
+    "build:staging": "vite build --mode staging",
+    "deploy:staging": "vite preview --mode staging --host 0.0.0.0 --port 4173",
+    "build:production": "vite build --mode production",
+    "deploy:production": "vite preview --mode production --host 0.0.0.0 --port 4173",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json}\"",
     "lint:js": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --quiet",
     "lint:scss": "stylelint \"src/**/*.scss\" --fix"

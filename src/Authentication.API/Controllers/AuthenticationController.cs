@@ -1,21 +1,19 @@
-﻿using System.Net;
-using System.Security.Claims;
-using Authentication.API.Exceptions;
-using Authentication.API.Interfaces;
+﻿using Authentication.API.Interfaces;
 using Authentication.API.Models.Dtos;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
+using AuthenticationSchemes = Authentication.API.Models.Enums.AuthenticationSchemes;
 
 namespace Authentication.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 public class AuthenticationController(
-    ILogger<AuthenticationController> logger,
-    IUserService userService
-) : ControllerBase
+    ILogger<AuthenticationController> logger, 
+    IUserService userService) 
+    : ControllerBase
 {
     [HttpPost("signup")]
     public async Task<IActionResult> SignUp([FromBody] SignInRequest request, CancellationToken ct)
@@ -50,12 +48,14 @@ public class AuthenticationController(
     [HttpDelete("delete")]
     public async Task<IActionResult> DeleteAsync(CancellationToken ct)
     {
+        Serilog.Log.Information("Test");
+        logger.LogInformation("Try to delete");
         await userService.DeleteAsync(HttpContext, ct);
+        logger.LogInformation("Deleted");
 
         return Ok();
     }
-
-    [Authorize]
+    
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
@@ -65,32 +65,24 @@ public class AuthenticationController(
     }
 
     [HttpGet("google/login")]
-    public IActionResult LoginWithGoogle()
+    public IActionResult LoginWithGoogle([FromQuery] string redirectUrl)
     {
         var properties = new AuthenticationProperties
         {
-            RedirectUri = Url.Action(nameof(GoogleCallback), "Authentication")
+            RedirectUri = QueryHelpers.AddQueryString(
+                Url.Action(nameof(GoogleCallback), "Authentication")!, 
+                "redirectUrl",
+                redirectUrl)
         };
-
-        return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        
+        return Challenge(properties, AuthenticationSchemes.Google);
     }
-
+    
     [HttpGet("google/callback")]
-    public async Task<IActionResult> GoogleCallback(CancellationToken ct)
+    public async Task<IActionResult> GoogleCallback([FromQuery] string redirectUrl, CancellationToken ct)
     {
-        var claims = HttpContext.User.Identities.First().Claims.ToList();
-
-        if (!claims.Any())
-            throw new DomainException("User not authorized", HttpStatusCode.Unauthorized);
-
-        await userService.SignUpAsync(
-            HttpContext,
-            new SignInRequest
-            {
-                Name = claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Name)!.Value,
-                Email = claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Email)!.Value
-            }, ct);
-
-        return Redirect("http://localhost:5173/login");
+        await userService.GoogleSignUpAsync(HttpContext, ct);
+        
+        return Redirect(redirectUrl);
     }
 }

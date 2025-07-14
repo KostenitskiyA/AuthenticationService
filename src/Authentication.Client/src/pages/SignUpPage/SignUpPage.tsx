@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLazySignUpQuery } from '../../api/authenticationApi';
+import { useNotificationContext } from '../../components/NotificationProvider';
 import { googleLogInQuery } from '../../api/googleApi';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
@@ -8,6 +9,9 @@ import styles from './SignUpPage.module.scss';
 
 const SignUpPage = () => {
     const navigate = useNavigate();
+    const notification = useNotificationContext();
+    const [searchParams] = useSearchParams();
+    const redirectURL = searchParams.get('redirectURL');
 
     const [signUp] = useLazySignUpQuery();
     const [name, setName] = useState<string>();
@@ -17,8 +21,19 @@ const SignUpPage = () => {
     const onNameInput = (value: string) => setName(value);
     const onEmailInput = (value: string) => setEmail(value);
     const onPasswordInput = (value: string) => setPassword(value);
-    const onSignUp = async () => await signUp({ name, email, password });
-    const onGoogleLogIn = () => googleLogInQuery();
+
+    const onSignUp = async () => {
+        const result = await signUp({ name, email, password });
+        if (result.isSuccess) {
+            notification.addMessage({
+                severity: 'error',
+                summary: 'Error calling https',
+                detail: 'hello',
+            });
+            //window.location.href = redirectURL;
+        }
+    };
+    const onGoogleLogIn = () => googleLogInQuery(redirectURL);
     const onLogIn = () => navigate(`/login`);
 
     return (

@@ -1,14 +1,13 @@
 using Authentication.API.Extensions;
 using Authentication.API.Middlewares;
 using Redis.Extensions;
-using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 var healthChecksBuilder = builder.Services.AddHealthChecks();
 
-builder.AddOTEL(configuration);
-builder.Services.AddRedis(configuration);
+builder.AddSerilogAndOpenTelemetry(configuration);
+builder.Services.AddRedis(configuration, healthChecksBuilder);
 builder.Services.AddDatabase(configuration, healthChecksBuilder);
 builder.Services.AddAuthentication(configuration);
 builder.Services.AddServices();
@@ -39,13 +38,14 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseSerilogRequestLogging();
+app.UseMiddleware<LoggerMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+//app.UseSerilogRequestLogging();
 app.UseOpenTelemetryPrometheusScrapingEndpoint();
 app.MapControllers();
 

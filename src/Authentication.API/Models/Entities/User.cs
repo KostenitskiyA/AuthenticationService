@@ -4,9 +4,15 @@ public record User
 {
     public Guid Id { get; set; }
 
-    public required string Name { get; init; }
+    public required string Name { get; set; }
 
-    public required string Email { get; init; }
+    public required string Email { get; set; }
 
-    public required string Password { get; init; }
+    public string? PasswordHash { get; set; }
+    
+    public bool HasGoogleAuth { get; set; }
+    
+    public DateTime CreateDate { get; set; } = DateTime.UtcNow;
+    
+    public GoogleUser GoogleUser { get; set; }
 }

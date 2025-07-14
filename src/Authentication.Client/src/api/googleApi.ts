@@ -1,4 +1,6 @@
-﻿import { getEnvConfig } from '../env-config';
+﻿import { getEnvConfig } from '../getEnvConfig';
 
-export const googleLogInQuery = () =>
-    (window.location.href = `${getEnvConfig().apiBaseUrl}/authentication/google/login`);
+const { apiUrl } = getEnvConfig();
+
+export const googleLogInQuery = (redirectUrl: string) =>
+    (window.location.href = `${apiUrl}/authentication/google/login?redirectUrl=${encodeURIComponent(redirectUrl)}`);

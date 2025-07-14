@@ -1,10 +1,12 @@
 ﻿import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { getEnvConfig } from '../env-config';
+import { getEnvConfig } from '../getEnvConfig';
+
+const { apiUrl } = getEnvConfig();
 
 export const authenticationApi = createApi({
     reducerPath: 'authenticationApi',
     baseQuery: fetchBaseQuery({
-        baseUrl: `${getEnvConfig().apiBaseUrl}/authentication`,
+        baseUrl: `${apiUrl}/authentication`,
         credentials: 'include',
     }),
     endpoints: (build) => ({
@@ -22,7 +24,19 @@ export const authenticationApi = createApi({
                 body: data,
             }),
         }),
+        refresh: build.query<void, void>({
+            query: () => ({
+                url: `refresh`,
+                method: 'POST',
+            }),
+        }),
+        delete: build.query<void, void>({
+            query: () => ({
+                url: `delete`,
+                method: 'DELETE',
+            }),
+        }),
     }),
 });
 
-export const { useLazySignUpQuery, useLazyLogInQuery } = authenticationApi;
+export const { useLazySignUpQuery, useLazyLogInQuery, useLazyRefreshQuery, useLazyDeleteQuery } = authenticationApi;

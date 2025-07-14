@@ -5,13 +5,15 @@ namespace Authentication.API.Interfaces;
 
 public interface IUserService
 {
-    Task<User> SignUpAsync(HttpContext context, SignInRequest request, CancellationToken cancellationToken = default);
+    Task<User> SignUpAsync(HttpContext context, SignInRequest request, CancellationToken ct = default);
 
-    Task<User> LogInAsync(HttpContext context, LogInRequest request, CancellationToken cancellationToken = default);
+    Task<User> GoogleSignUpAsync(HttpContext context, CancellationToken ct = default);
+    
+    Task<User> LogInAsync(HttpContext context, LogInRequest request, CancellationToken ct = default);
 
-    Task LogOutAsync(HttpContext context, CancellationToken cancellationToken = default);
+    Task LogOutAsync(HttpContext context, CancellationToken ct = default);
 
-    Task DeleteAsync(HttpContext context, CancellationToken cancellationToken = default);
+    Task DeleteAsync(HttpContext context, CancellationToken ct = default);
 
-    Task RefreshAsync(HttpContext context, CancellationToken cancellationToken = default);
+    Task RefreshAsync(HttpContext context, CancellationToken ct = default);
 }
