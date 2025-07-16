@@ -12,38 +12,43 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
-using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.Grafana.Loki;
-using Serilog.Sinks.SystemConsole.Themes;
 
 namespace Authentication.API.Extensions;
 
 public static class ApplicationExtensions
 {
     public static IServiceCollection AddSerilogAndOpenTelemetry(
-        this WebApplicationBuilder builder, 
+        this WebApplicationBuilder builder,
         IConfiguration configuration)
     {
         var host = builder.Host;
         var services = builder.Services;
 
         var otelConfiguration = services.ConfigureOptions<OpenTelemetryConfiguration>(configuration);
-        
+
         host.UseSerilog((_, loggerConfiguration) =>
         {
             loggerConfiguration
                 .MinimumLevel.Information()
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .Filter.ByExcluding(logEvent =>
+                    logEvent.Properties.ContainsKey("RequestPath") &&
+                    logEvent.Properties["RequestPath"].ToString().Contains("/metrics")
+                )
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
                 .WriteTo.GrafanaLoki(
                     otelConfiguration.LokiUrl,
-                    [new LokiLabel { Key = "app", Value = otelConfiguration.ServiceName }]
+                    [
+                        new LokiLabel { Key = "service", Value = otelConfiguration.ServiceName },
+                        new LokiLabel { Key = "service_name", Value = otelConfiguration.ServiceName }
+                    ]
                 );
         });
-        
+
         services.AddOpenTelemetry()
             .WithTracing(tracerProvider =>
             {
@@ -82,7 +87,7 @@ public static class ApplicationExtensions
 
         return services;
     }
-    
+
     public static IServiceCollection AddAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         var authenticationConfiguration = services.ConfigureOptions<AuthenticationConfiguration>(configuration);

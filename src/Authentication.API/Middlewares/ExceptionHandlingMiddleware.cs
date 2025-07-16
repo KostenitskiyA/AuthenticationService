@@ -1,10 +1,11 @@
 ﻿using System.Net;
 using System.Text.Json;
 using Authentication.API.Exceptions;
+using Serilog;
 
 namespace Authentication.API.Middlewares;
 
-public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+public class ExceptionHandlingMiddleware(RequestDelegate next)
 {
     private static Task HandleExceptionAsync(HttpContext context, HttpStatusCode statusCode, string? content = null)
     {
@@ -24,7 +25,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         }
         catch (NotAuthorizedException exception)
         {
-            logger.LogError(exception, exception.Message);
+            Log.Error(exception, exception.Message);
             await HandleExceptionAsync(
                 context,
                 exception.StatusCode,
@@ -32,7 +33,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         }
         catch (EntityNotFoundException exception)
         {
-            logger.LogError(exception, exception.Message);
+            Log.Error(exception, exception.Message);
             await HandleExceptionAsync(
                 context,
                 exception.StatusCode,
@@ -40,7 +41,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         }
         catch (DomainException exception)
         {
-            logger.LogError(exception, exception.Message);
+            Log.Error(exception, exception.Message);
             await HandleExceptionAsync(
                 context,
                 exception.StatusCode,
@@ -48,7 +49,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "An unhandled exception occurred");
+            Log.Error(exception, "An unhandled exception occurred");
             await HandleExceptionAsync(context, HttpStatusCode.InternalServerError);
         }
     }

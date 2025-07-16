@@ -11,16 +11,13 @@ namespace Authentication.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 public class AuthenticationController(
-    ILogger<AuthenticationController> logger, 
     IUserService userService) 
     : ControllerBase
 {
     [HttpPost("signup")]
     public async Task<IActionResult> SignUp([FromBody] SignInRequest request, CancellationToken ct)
     {
-        logger.LogInformation("{Email} try to sign up", request.Email);
         await userService.SignUpAsync(HttpContext, request, ct);
-        logger.LogInformation("{Email} sign up", request.Email);
 
         return Ok();
     }
@@ -28,9 +25,7 @@ public class AuthenticationController(
     [HttpPost("login")]
     public async Task<IActionResult> LogIn([FromBody] LogInRequest request, CancellationToken ct)
     {
-        logger.LogInformation("{Email} try to login", request.Email);
         await userService.LogInAsync(HttpContext, request, ct);
-        logger.LogInformation("{Email} login", request.Email);
 
         return Ok();
     }
@@ -48,10 +43,7 @@ public class AuthenticationController(
     [HttpDelete("delete")]
     public async Task<IActionResult> DeleteAsync(CancellationToken ct)
     {
-        Serilog.Log.Information("Test");
-        logger.LogInformation("Try to delete");
         await userService.DeleteAsync(HttpContext, ct);
-        logger.LogInformation("Deleted");
 
         return Ok();
     }

@@ -1,6 +1,7 @@
 using Authentication.API.Extensions;
 using Authentication.API.Middlewares;
 using Redis.Extensions;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -45,7 +46,7 @@ app.UseAuthorization();
 app.UseMiddleware<LoggerMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-//app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging();
 app.UseOpenTelemetryPrometheusScrapingEndpoint();
 app.MapControllers();
 
