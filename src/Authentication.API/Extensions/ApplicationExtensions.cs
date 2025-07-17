@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Authentication.API.Data;
+using Authentication.API.Helpers;
 using Authentication.API.Interfaces;
 using Authentication.API.Models.Enums;
 using Authentication.API.Models.Options;
@@ -50,14 +51,6 @@ public static class ApplicationExtensions
         });
 
         services.AddOpenTelemetry()
-            .WithTracing(tracerProvider =>
-            {
-                tracerProvider
-                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddOtlpExporter(options => { options.Endpoint = new Uri(otelConfiguration.TempoUrl); });
-            })
             .WithMetrics(metricsProvider =>
             {
                 metricsProvider
@@ -67,6 +60,20 @@ public static class ApplicationExtensions
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddPrometheusExporter();
+            })
+            .WithTracing(tracerProvider =>
+            {
+                tracerProvider
+                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
+                    .AddAspNetCoreInstrumentation(options =>
+                    {
+                        options.Filter = httpContext =>
+                            !httpContext.Request.Path.Value!.StartsWith("/metrics") &&
+                            !HttpMethods.IsOptions(httpContext.Request.Method);
+                    })
+                    .AddEntityFrameworkCoreInstrumentation()
+                    .AddSource(otelConfiguration.ServiceName)
+                    .AddOtlpExporter(options => { options.Endpoint = new Uri(otelConfiguration.TempoUrl); });
             });
 
         return services;
@@ -138,9 +145,9 @@ public static class ApplicationExtensions
 
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
-        services.AddTransient<IUserRepository, UserRepository>();
-        services.AddTransient<IGoogleUserRepository, GoogleUserRepository>();
-        services.AddTransient<IUserService, UserService>();
+        services.AddTransient<IUserRepository, UserRepository, TracingInterceptor>();
+        services.AddTransient<IGoogleUserRepository, GoogleUserRepository, TracingInterceptor>();
+        services.AddTransient<IUserService, UserService, TracingInterceptor>();
 
         return services;
     }

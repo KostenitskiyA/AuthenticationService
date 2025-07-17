@@ -10,15 +10,13 @@ namespace Authentication.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthenticationController(
-    IUserService userService) 
-    : ControllerBase
+public class AuthenticationController(IUserService userService) : ControllerBase
 {
     [HttpPost("signup")]
     public async Task<IActionResult> SignUp([FromBody] SignInRequest request, CancellationToken ct)
     {
         await userService.SignUpAsync(HttpContext, request, ct);
-
+        
         return Ok();
     }
 
@@ -26,7 +24,7 @@ public class AuthenticationController(
     public async Task<IActionResult> LogIn([FromBody] LogInRequest request, CancellationToken ct)
     {
         await userService.LogInAsync(HttpContext, request, ct);
-
+        
         return Ok();
     }
 
@@ -44,7 +42,7 @@ public class AuthenticationController(
     public async Task<IActionResult> DeleteAsync(CancellationToken ct)
     {
         await userService.DeleteAsync(HttpContext, ct);
-
+        
         return Ok();
     }
     
