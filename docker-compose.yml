@@ -3,28 +3,6 @@ version: '3.9'
 name: authentication-service
 
 services:
-  redis:
-    image: 'redis:latest'
-    container_name: 'redis'
-    ports:
-      - '8201:6379'
-    restart: always
-    volumes:
-      - redis:/var/lib/redis
-  
-  postgres:
-    container_name: 'postgres'
-    image: 'postgres:latest'
-    ports:
-      - '8080:5432'
-    environment:
-      - POSTGRES_DB=authentication_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    restart: always
-    volumes:
-      - postgres:/var/lib/postgresql/data
-
   api:
     container_name: 'api'
     build:
@@ -34,66 +12,12 @@ services:
       - '5000:8080'
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
-
-  prometheus:
-    container_name: prometheus
-    image: prom/prometheus:latest
-    ports:
-      - '9090:9090'
-    depends_on:
-      - api
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus:/var/lib/prometheus
-
-  grafana:
-    container_name: grafana
-    image: grafana/grafana:latest
-    ports:
-      - '3000:3000'
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    depends_on:
-      - api
-    volumes:
-      - grafana:/var/lib/grafana
-
-  loki:
-    container_name: loki
-    image: grafana/loki:latest
-    ports:
-      - '3100:3100'
-    command: -config.file=/etc/loki/local-config.yaml
-    depends_on:
-      - grafana
-    volumes:
-      - ./loki-config.yaml:/etc/loki/local-config.yaml
-      - loki:/loki
-
-  tempo:
-    container_name: tempo
-    image: grafana/tempo:latest
-    ports:
-      - '3200:3200'
-      - '4317:4317'
-      - '4318:4318'
-      - '9411:9411'
-    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
-    depends_on:
-      - grafana
-    volumes:
-      - ./tempo.yaml:/etc/tempo/tempo.yaml
-      - ./data/tempo:/tmp/tempo
+    networks:
+      - default
+      - infrastructure
 
 networks:
   default:
     name: authentication-service
-
-volumes:
-  redis:
-  postgres:
-  prometheus:
-  grafana:
-  loki:
-  tempo:
+  infrastructure:
+    external: true

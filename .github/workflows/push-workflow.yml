@@ -19,6 +19,9 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          
+      - name: Authenticate GitHub NuGet source
+        run: dotnet nuget update source github --username ${{ github.repository_owner }} --password ${{ secrets.API_KEY }} --store-password-in-clear-text
 
       - name: Restore
         run: dotnet restore

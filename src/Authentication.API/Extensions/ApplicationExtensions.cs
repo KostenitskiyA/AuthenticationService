@@ -9,12 +9,14 @@ using Authentication.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Grafana.Loki;
+using Share.Extensions;
 
 namespace Authentication.API.Extensions;
 
@@ -59,7 +61,11 @@ public static class ApplicationExtensions
                     .AddProcessInstrumentation()
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddPrometheusExporter();
+                    .AddOtlpExporter(options =>
+                    {
+                        options.Endpoint = new Uri(otelConfiguration.OtelUrl);
+                        options.Protocol = OtlpExportProtocol.Grpc;
+                    });
             })
             .WithTracing(tracerProvider =>
             {
@@ -73,7 +79,11 @@ public static class ApplicationExtensions
                     })
                     .AddEntityFrameworkCoreInstrumentation()
                     .AddSource(otelConfiguration.ServiceName)
-                    .AddOtlpExporter(options => { options.Endpoint = new Uri(otelConfiguration.TempoUrl); });
+                    .AddOtlpExporter(options =>
+                    {
+                        options.Endpoint = new Uri(otelConfiguration.OtelUrl);
+                        options.Protocol = OtlpExportProtocol.Grpc;
+                    });
             });
 
         return services;

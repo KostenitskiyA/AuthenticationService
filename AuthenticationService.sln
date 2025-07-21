@@ -1,27 +1,27 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{F0CBF614-9136-4725-BC07-4A356A203A54}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution items", "{F0CBF614-9136-4725-BC07-4A356A203A54}"
 	ProjectSection(SolutionItems) = preProject
+					NuGet.Config = NuGet.Config
+					.editorconfig = .editorconfig
+					.gitignore = .gitignore
 		docker-compose.yml = docker-compose.yml
-		loki-config.yaml = loki-config.yaml
-		prometheus.yml = prometheus.yml
-		tempo.yaml = tempo.yaml
 	EndProjectSection
 EndProject
 
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Authentication.API", "src\\Authentication.API\\Authentication.API.csproj", "{2CD02F0E-91CC-4340-900E-114C96B2B8BD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Authentication.API", "src\Authentication.API\Authentication.API.csproj", "{2CD02F0E-91CC-4340-900E-114C96B2B8BD}"
 EndProject
 
 Global
-    GlobalSection(SolutionConfigurationPlatforms) = preSolution
-        Debug|Any CPU = Debug|Any CPU
-        Release|Any CPU = Release|Any CPU
-	EndGlobalSection
+				GlobalSection(SolutionConfigurationPlatforms) = preSolution
+								Debug|Any CPU = Debug|Any CPU
+								Release|Any CPU = Release|Any CPU
+				EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-	    {2CD02F0E-91CC-4340-900E-114C96B2B8BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-	    {2CD02F0E-91CC-4340-900E-114C96B2B8BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-	    {2CD02F0E-91CC-4340-900E-114C96B2B8BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-	    {2CD02F0E-91CC-4340-900E-114C96B2B8BD}.Release|Any CPU.Build.0 = Release|Any CPU
+					{2CD02F0E-91CC-4340-900E-114C96B2B8BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+					{2CD02F0E-91CC-4340-900E-114C96B2B8BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+					{2CD02F0E-91CC-4340-900E-114C96B2B8BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+					{2CD02F0E-91CC-4340-900E-114C96B2B8BD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

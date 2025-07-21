@@ -6,5 +6,5 @@ public record OpenTelemetryConfiguration
 
     public required string LokiUrl { get; init; }
 
-    public required string TempoUrl { get; init; }
+    public required string OtelUrl { get; init; }
 }

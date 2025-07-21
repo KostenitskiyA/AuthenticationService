@@ -47,7 +47,6 @@ app.UseMiddleware<LoggerMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseSerilogRequestLogging();
-app.UseOpenTelemetryPrometheusScrapingEndpoint();
 app.MapControllers();
 
 app.Run();
