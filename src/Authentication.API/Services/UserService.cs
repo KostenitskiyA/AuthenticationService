@@ -85,8 +85,8 @@ public class UserService(
             _authenticationOptions.RefreshTokenExpiresInMinutes);
 
         await redisService.SetStringAsync(
-            $"authentication:refresh:{user.Id}",
-            refreshToken,
+            $"authentication:refresh:{refreshToken}",
+            user.Id,
             expireTime: TimeSpan.FromMinutes(_authenticationOptions.RefreshTokenExpiresInMinutes));
     }
 
@@ -207,31 +207,26 @@ public class UserService(
 
     public async Task RefreshAsync(HttpContext context, CancellationToken ct)
     {
-        if (context.User.Identity is not { IsAuthenticated: true })
-            await LogOutAsync(context, ct);
+        var refreshToken = context.Request.Cookies[AuthenticationSchemes.RefreshToken];
 
-        var userId = context.User.FindFirstValue(ClaimTypes.Id);
+        if (string.IsNullOrEmpty(refreshToken))
+            return;
 
-        if (string.IsNullOrEmpty(userId))
-            await LogOutAsync(context, ct);
+        var id = await redisService.GetStringAsync<string>($"authentication:refresh:{refreshToken}");
 
-        if (Guid.TryParse(userId, out var id))
+        if (string.IsNullOrEmpty(id))
         {
-            var user = await userRepository.GetByIdAsync(id, ct);
-
+            await LogOutAsync(context, ct);
+            return;
+        }
+        
+        if (Guid.TryParse(id, out var userId))
+        {
+            var user = await userRepository.GetByIdAsync(userId, ct);
+            
             if (user is null)
-                throw new EntityNotFoundException(nameof(User), id.ToString());
-
-            var cookiesRefreshToken = context.Request.Cookies[AuthenticationSchemes.RefreshToken];
-
-            if (string.IsNullOrEmpty(cookiesRefreshToken))
-                await LogOutAsync(context, ct);
-
-            var cacheRefreshToken = await redisService.GetStringAsync<string>($"authentication:refresh:{userId}");
-
-            if (cookiesRefreshToken != cacheRefreshToken)
-                await LogOutAsync(context, ct);
-
+                throw new EntityNotFoundException(nameof(User), id);
+            
             await Authentication(context, user);
         }
     }
