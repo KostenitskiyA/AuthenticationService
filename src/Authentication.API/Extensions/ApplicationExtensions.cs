@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Authentication.API.Data;
-using Authentication.API.Helpers;
 using Authentication.API.Interfaces;
 using Authentication.API.Models.Enums;
 using Authentication.API.Models.Options;
@@ -17,6 +16,8 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Grafana.Loki;
 using Share.Extensions;
+using Share.Interceptors;
+using Share.Options;
 
 namespace Authentication.API.Extensions;
 
@@ -71,6 +72,7 @@ public static class ApplicationExtensions
             {
                 tracerProvider
                     .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
+                    .AddSource(otelConfiguration.ServiceName)
                     .AddAspNetCoreInstrumentation(options =>
                     {
                         options.Filter = httpContext =>
@@ -78,7 +80,6 @@ public static class ApplicationExtensions
                             !HttpMethods.IsOptions(httpContext.Request.Method);
                     })
                     .AddEntityFrameworkCoreInstrumentation()
-                    .AddSource(otelConfiguration.ServiceName)
                     .AddOtlpExporter(options =>
                     {
                         options.Endpoint = new Uri(otelConfiguration.OtelUrl);
