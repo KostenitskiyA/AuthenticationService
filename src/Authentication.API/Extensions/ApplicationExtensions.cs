@@ -8,6 +8,7 @@ using Authentication.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -46,10 +47,7 @@ public static class ApplicationExtensions
                 .WriteTo.Console()
                 .WriteTo.GrafanaLoki(
                     otelConfiguration.LokiUrl,
-                    [
-                        new LokiLabel { Key = "service", Value = otelConfiguration.ServiceName },
-                        new LokiLabel { Key = "service_name", Value = otelConfiguration.ServiceName }
-                    ]
+                    [ new LokiLabel { Key = "service", Value = otelConfiguration.ServiceName } ]
                 );
         });
 
@@ -57,7 +55,10 @@ public static class ApplicationExtensions
             .WithMetrics(metricsProvider =>
             {
                 metricsProvider
-                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
+                    .SetResourceBuilder(
+                        ResourceBuilder
+                            .CreateDefault()
+                            .AddService(otelConfiguration.ServiceName))
                     .AddRuntimeInstrumentation()
                     .AddProcessInstrumentation()
                     .AddAspNetCoreInstrumentation()
@@ -71,7 +72,10 @@ public static class ApplicationExtensions
             .WithTracing(tracerProvider =>
             {
                 tracerProvider
-                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
+                    .SetResourceBuilder(
+                        ResourceBuilder
+                            .CreateDefault()
+                            .AddService(otelConfiguration.ServiceName))
                     .AddSource(otelConfiguration.ServiceName)
                     .AddAspNetCoreInstrumentation(options =>
                     {
@@ -80,6 +84,7 @@ public static class ApplicationExtensions
                             !HttpMethods.IsOptions(httpContext.Request.Method);
                     })
                     .AddEntityFrameworkCoreInstrumentation()
+                    .AddNpgsql()
                     .AddOtlpExporter(options =>
                     {
                         options.Endpoint = new Uri(otelConfiguration.OtelUrl);
