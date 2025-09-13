@@ -15,13 +15,13 @@ using ClaimTypes = Domain.Enums.ClaimTypes;
 namespace Application.Services;
 
 public class TokenService(
-    IOptionsMonitor<AuthenticationConfiguration> authenticationConfigurationMonitor, 
-    IRedisService redisService) 
+    IOptionsMonitor<AuthenticationConfiguration> authenticationConfigurationMonitor,
+    IRedisService redisService)
     : ITokenService
 {
     private readonly AuthenticationOptions _authenticationOptions =
         authenticationConfigurationMonitor.CurrentValue.AuthenticationOptions;
-    
+
     public ClaimsPrincipal CreateUserClaims(User user)
     {
         var claims = new List<Claim>

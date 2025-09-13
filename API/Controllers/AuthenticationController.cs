@@ -16,7 +16,7 @@ public class AuthenticationController(IUserService userService) : ControllerBase
     public async Task<IActionResult> SignUp([FromBody] SignInRequest request, CancellationToken ct)
     {
         await userService.SignUpAsync(HttpContext, request, ct);
-        
+
         return Ok();
     }
 
@@ -24,7 +24,7 @@ public class AuthenticationController(IUserService userService) : ControllerBase
     public async Task<IActionResult> LogIn([FromBody] LogInRequest request, CancellationToken ct)
     {
         await userService.LogInAsync(HttpContext, request, ct);
-        
+
         return Ok();
     }
 
@@ -42,10 +42,10 @@ public class AuthenticationController(IUserService userService) : ControllerBase
     public async Task<IActionResult> DeleteAsync(CancellationToken ct)
     {
         await userService.DeleteAsync(HttpContext, ct);
-        
+
         return Ok();
     }
-    
+
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
@@ -60,19 +60,19 @@ public class AuthenticationController(IUserService userService) : ControllerBase
         var properties = new AuthenticationProperties
         {
             RedirectUri = QueryHelpers.AddQueryString(
-                Url.Action(nameof(GoogleCallback), "Authentication")!, 
+                Url.Action(nameof(GoogleCallback), "Authentication")!,
                 "redirectUrl",
                 redirectUrl)
         };
-        
+
         return Challenge(properties, AuthenticationSchemes.Google);
     }
-    
+
     [HttpGet("google/callback")]
     public async Task<IActionResult> GoogleCallback([FromQuery] string redirectUrl, CancellationToken ct)
     {
         await userService.GoogleSignUpAsync(HttpContext, ct);
-        
+
         return Redirect(redirectUrl);
     }
 }

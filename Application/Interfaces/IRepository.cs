@@ -5,7 +5,7 @@ namespace Application.Interfaces;
 public interface IRepository<T> where T : class
 {
     Task SaveChangesAsync(CancellationToken ct);
-    
+
     Task<bool> IsExistsAsync(Expression<Func<T, bool>> expression, CancellationToken ct);
 
     Task<T?> GetByIdAsync(Guid id, CancellationToken ct);

@@ -47,7 +47,7 @@ public static class ApplicationExtensions
                 .WriteTo.Console()
                 .WriteTo.GrafanaLoki(
                     otelConfiguration.LokiUrl,
-                    [ new LokiLabel { Key = "service", Value = otelConfiguration.ServiceName } ]
+                    [new LokiLabel { Key = "service", Value = otelConfiguration.ServiceName }]
                 );
         });
 

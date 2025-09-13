@@ -6,9 +6,9 @@ namespace Infrastructure.Repositories;
 
 public class Repository<T>(DbContext context) : IRepository<T> where T : class
 {
-    public DbContext Context => context;
-    
     protected readonly DbSet<T> DbSet = context.Set<T>();
+    
+    public DbContext Context => context;
 
     public async Task SaveChangesAsync(CancellationToken ct)
     {

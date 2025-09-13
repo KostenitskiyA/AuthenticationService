@@ -16,14 +16,14 @@ public class UserService(
     IUserRepository userRepository,
     IGoogleUserRepository googleUserRepository,
     ITokenService tokenService,
-    IRedisService redisService) 
+    IRedisService redisService)
     : IUserService
 {
     public async Task<User> SignUpAsync(HttpContext context, SignInRequest request, CancellationToken ct)
     {
         var validator = new SignInRequestValidator(userRepository);
         await validator.ValidateAndThrowAsync(request, ct);
-        
+
         var user = await userRepository.AddAsync(
             new User
             {
@@ -32,7 +32,7 @@ public class UserService(
                 PasswordHash = !string.IsNullOrEmpty(request.Password)
                     ? BCrypt.Net.BCrypt.HashPassword(request.Password)
                     : string.Empty
-            }, 
+            },
             ct);
         await userRepository.SaveChangesAsync(ct);
 
@@ -94,7 +94,7 @@ public class UserService(
     {
         var validator = new LogInRequestValidator(userRepository);
         await validator.ValidateAndThrowAsync(request, ct);
-        
+
         var user = await userRepository.GetByEmailAsync(request.Email, ct);
 
         if (user is null)
@@ -129,10 +129,10 @@ public class UserService(
             throw new EntityNotFoundException(nameof(User), email);
 
         userRepository.Delete(user);
-        
+
         if (user.HasGoogleAuth)
             googleUserRepository.Delete(user.GoogleUser);
-        
+
         await userRepository.SaveChangesAsync(ct);
 
         await LogOutAsync(context, ct);
@@ -152,14 +152,14 @@ public class UserService(
             await LogOutAsync(context, ct);
             return;
         }
-        
+
         if (Guid.TryParse(id, out var userId))
         {
             var user = await userRepository.GetByIdAsync(userId, ct);
-            
+
             if (user is null)
                 throw new EntityNotFoundException(nameof(User), id);
-            
+
             await tokenService.AuthenticationAsync(context, user);
         }
     }

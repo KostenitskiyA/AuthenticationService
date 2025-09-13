@@ -16,11 +16,11 @@ public class ApplicationContext(DbContextOptions<ApplicationContext> options) : 
             entity.Property(user => user.Name)
                 .IsRequired()
                 .HasMaxLength(63);
-            
+
             entity.Property(user => user.Email)
                 .IsRequired()
                 .HasMaxLength(63);
-            
+
             entity.HasIndex(user => user.Email)
                 .IsUnique();
 
