@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using API.Middlewares;
 using Redis.Extensions;
 using Serilog;

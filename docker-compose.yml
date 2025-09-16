@@ -6,7 +6,7 @@ services:
   api:
     container_name: 'api'
     build:
-      context: './src/Authentication.API'
+      context: './src/API'
       dockerfile: 'Dockerfile'
     ports:
       - '5050:8080'

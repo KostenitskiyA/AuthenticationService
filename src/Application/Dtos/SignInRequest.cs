@@ -9,7 +9,7 @@ public record SignInRequest
 
     public required string Email { get; init; }
 
-    public string? Password { get; init; }
+    public required string Password { get; init; }
 }
 
 public sealed class SignInRequestValidator : AbstractValidator<SignInRequest>
