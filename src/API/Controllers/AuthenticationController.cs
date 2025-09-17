@@ -1,10 +1,12 @@
-﻿using Application.Dtos;
+﻿using API.Models;
+using Application.Dtos;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using AuthenticationSchemes = Domain.Enums.AuthenticationSchemes;
+using Results = API.Models.Results;
 
 namespace API.Controllers;
 
@@ -13,45 +15,45 @@ namespace API.Controllers;
 public class AuthenticationController(IUserService userService) : ControllerBase
 {
     [HttpPost("signup")]
-    public async Task<IActionResult> SignUp([FromBody] SignInRequest request, CancellationToken ct)
+    public async Task<ActionResult<Result>> SignUp([FromBody] SignInRequest request, CancellationToken ct)
     {
         await userService.SignUpAsync(HttpContext, request, ct);
 
-        return Ok();
+        return Ok(Results.Ok(HttpContext));
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> LogIn([FromBody] LogInRequest request, CancellationToken ct)
+    public async Task<ActionResult<Result>> LogIn([FromBody] LogInRequest request, CancellationToken ct)
     {
         await userService.LogInAsync(HttpContext, request, ct);
 
-        return Ok();
+        return Ok(Results.Ok(HttpContext));
     }
 
     [Authorize]
     [HttpDelete("logout")]
-    public async Task<IActionResult> LogOut(CancellationToken ct)
+    public async Task<ActionResult<Result>> LogOut(CancellationToken ct)
     {
         await userService.LogOutAsync(HttpContext, ct);
 
-        return Ok();
+        return Ok(Results.Ok(HttpContext));
     }
 
     [Authorize]
     [HttpDelete("delete")]
-    public async Task<IActionResult> DeleteAsync(CancellationToken ct)
+    public async Task<ActionResult<Result>> DeleteAsync(CancellationToken ct)
     {
         await userService.DeleteAsync(HttpContext, ct);
 
-        return Ok();
+        return Ok(Results.Ok(HttpContext));
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh(CancellationToken ct)
+    public async Task<ActionResult<Result>> Refresh(CancellationToken ct)
     {
         await userService.RefreshAsync(HttpContext, ct);
 
-        return Ok();
+        return Ok(Results.Ok(HttpContext));
     }
 
     [HttpGet("google/login")]
