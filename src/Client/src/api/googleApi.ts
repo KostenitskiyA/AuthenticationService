@@ -3,4 +3,4 @@
 const { apiUrl } = getEnvConfig();
 
 export const googleLogInQuery = (redirectUrl: string) =>
-    (window.location.href = `${apiUrl}/authentication/google/login?redirectUrl=${encodeURIComponent(redirectUrl)}`);
+    (window.location.href = `${apiUrl}/google/login?redirectUrl=${encodeURIComponent(redirectUrl)}`);

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using API.Models;
 using Domain.Exceptions;
 using FluentValidation;
@@ -18,19 +19,21 @@ public class ExceptionHandlingMiddleware(RequestDelegate next)
         IEnumerable<ValidationFailure>? details,
         CancellationToken ct)
     {
-        var result = Results.Error(
-            context,
-            new Error(
-                statusCode,
-                message,
-                details!.Select(detail =>
-                    new ValidationError(detail.PropertyName, detail.ErrorMessage))
-                    .ToArray()));
+        var errorDetails = details?
+            .Select(detail => new ValidationError(detail.PropertyName, detail.ErrorMessage))
+            .ToArray() ?? [];
+
+        var result = Results.Error(context, new Error(statusCode, message, errorDetails));
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
 
-        var json = JsonSerializer.Serialize(result);
+        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            WriteIndented = false
+        });
+
         return context.Response.WriteAsync(json, ct);
     }
 

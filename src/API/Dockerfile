@@ -7,10 +7,10 @@ WORKDIR /src
 
 COPY . .
 RUN dotnet restore "API.csproj"
-RUN dotnet build "API.csproj" -c Debug -o /app/build
+RUN dotnet build "API.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "API.csproj" -c Debug -o /app/publish
+RUN dotnet publish "API.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app

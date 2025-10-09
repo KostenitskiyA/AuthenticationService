@@ -5,5 +5,9 @@ namespace Application.Interfaces;
 
 public interface ITokenService
 {
-    Task AuthenticationAsync(HttpContext context, User user);
+    Task AppendTokensAsync(HttpContext context, User user);
+
+    Task RevokeTokensAsync(HttpContext context);
+
+    Task RefreshTokensAsync(HttpContext context, CancellationToken ct);
 }

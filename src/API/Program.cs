@@ -43,10 +43,10 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseMiddleware<LoggerMiddleware>();
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 app.UseSerilogRequestLogging();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<LoggerMiddleware>();
+
 app.MapControllers();
 
 app.Run();

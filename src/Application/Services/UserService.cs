@@ -7,7 +7,6 @@ using Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
-using Redis.Interfaces;
 using SystemClaimTypes = System.Security.Claims.ClaimTypes;
 
 namespace Application.Services;
@@ -15,8 +14,7 @@ namespace Application.Services;
 public class UserService(
     IUserRepository userRepository,
     IGoogleUserRepository googleUserRepository,
-    ITokenService tokenService,
-    IRedisService redisService)
+    ITokenService tokenService)
     : IUserService
 {
     public async Task<User> SignUpAsync(HttpContext context, SignInRequest request, CancellationToken ct)
@@ -36,7 +34,7 @@ public class UserService(
             ct);
         await userRepository.SaveChangesAsync(ct);
 
-        await tokenService.AuthenticationAsync(context, user);
+        await tokenService.AppendTokensAsync(context, user);
 
         return user;
     }
@@ -74,17 +72,15 @@ public class UserService(
                     Id = user.Id,
                     GoogleId = googleId
                 }, ct);
-
-            await userRepository.SaveChangesAsync(ct);
         }
         else
         {
             user.GoogleUser = new GoogleUser { Id = user.Id, GoogleId = googleId };
             user.HasGoogleAuth = true;
-            await userRepository.SaveChangesAsync(ct);
         }
 
-        await tokenService.AuthenticationAsync(context, user);
+        await userRepository.SaveChangesAsync(ct);
+        await tokenService.AppendTokensAsync(context, user);
         context.Response.Cookies.Delete($".AspNetCore.{AuthenticationSchemes.GoogleCookie}");
 
         return user;
@@ -103,17 +99,9 @@ public class UserService(
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new DomainException($"User {request.Email} password invalid");
 
-        await tokenService.AuthenticationAsync(context, user);
+        await tokenService.RevokeTokensAsync(context);
 
         return user;
-    }
-
-    public async Task LogOutAsync(HttpContext context, CancellationToken ct)
-    {
-        context.Response.Cookies.Delete(AuthenticationSchemes.Token);
-        context.Response.Cookies.Delete(AuthenticationSchemes.RefreshToken);
-
-        await Task.CompletedTask;
     }
 
     public async Task DeleteAsync(HttpContext context, CancellationToken ct)
@@ -134,33 +122,6 @@ public class UserService(
             googleUserRepository.Delete(user.GoogleUser);
 
         await userRepository.SaveChangesAsync(ct);
-
-        await LogOutAsync(context, ct);
-    }
-
-    public async Task RefreshAsync(HttpContext context, CancellationToken ct)
-    {
-        var refreshToken = context.Request.Cookies[AuthenticationSchemes.RefreshToken];
-
-        if (string.IsNullOrEmpty(refreshToken))
-            return;
-
-        var id = await redisService.GetStringAsync<string>($"authentication:refresh:{refreshToken}");
-
-        if (string.IsNullOrEmpty(id))
-        {
-            await LogOutAsync(context, ct);
-            return;
-        }
-
-        if (Guid.TryParse(id, out var userId))
-        {
-            var user = await userRepository.GetByIdAsync(userId, ct);
-
-            if (user is null)
-                throw new EntityNotFoundException(nameof(User), id);
-
-            await tokenService.AuthenticationAsync(context, user);
-        }
+        await tokenService.RevokeTokensAsync(context);
     }
 }

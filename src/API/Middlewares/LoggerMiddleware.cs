@@ -18,6 +18,7 @@ public class LoggerMiddleware(RequestDelegate next)
 
         using (LogContext.PushProperty("IP", ip))
         using (LogContext.PushProperty("UserId", userId))
+        using (LogContext.PushProperty("TraceId", context.TraceIdentifier))
         {
             await next(context);
         }

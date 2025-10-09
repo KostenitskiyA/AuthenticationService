@@ -12,7 +12,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthenticationController(IUserService userService) : ControllerBase
+public class AuthenticationController(IUserService userService, ITokenService tokenService) : ControllerBase
 {
     [HttpPost("signup")]
     public async Task<ActionResult<Result>> SignUp([FromBody] SignInRequest request, CancellationToken ct)
@@ -34,7 +34,7 @@ public class AuthenticationController(IUserService userService) : ControllerBase
     [HttpDelete("logout")]
     public async Task<ActionResult<Result>> LogOut(CancellationToken ct)
     {
-        await userService.LogOutAsync(HttpContext, ct);
+        await tokenService.RevokeTokensAsync(HttpContext);
 
         return Ok(Results.Ok(HttpContext));
     }
@@ -51,7 +51,7 @@ public class AuthenticationController(IUserService userService) : ControllerBase
     [HttpPost("refresh")]
     public async Task<ActionResult<Result>> Refresh(CancellationToken ct)
     {
-        await userService.RefreshAsync(HttpContext, ct);
+        await tokenService.RefreshTokensAsync(HttpContext, ct);
 
         return Ok(Results.Ok(HttpContext));
     }
