@@ -19,8 +19,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next)
         IEnumerable<ValidationFailure>? details,
         CancellationToken ct)
     {
-        var errorDetails = details?
-            .Select(detail => new ValidationError(detail.PropertyName, detail.ErrorMessage))
+        var errorDetails = details?.Select(detail => new ValidationError(detail.PropertyName, detail.ErrorMessage))
             .ToArray() ?? [];
 
         var result = Results.Error(context, new Error(statusCode, message, errorDetails));
@@ -28,11 +27,13 @@ public class ExceptionHandlingMiddleware(RequestDelegate next)
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
 
-        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            WriteIndented = false
-        });
+        var json = JsonSerializer.Serialize(
+            result,
+            new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = false
+            }
+        );
 
         return context.Response.WriteAsync(json, ct);
     }

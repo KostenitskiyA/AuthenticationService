@@ -31,7 +31,8 @@ public class UserService(
                     ? BCrypt.Net.BCrypt.HashPassword(request.Password)
                     : string.Empty
             },
-            ct);
+            ct
+        );
         await userRepository.SaveChangesAsync(ct);
 
         await tokenService.AppendTokensAsync(context, user);
@@ -58,20 +59,9 @@ public class UserService(
 
         if (user is null)
         {
-            user = await userRepository.AddAsync(
-                new User
-                {
-                    Name = name,
-                    Email = email,
-                    HasGoogleAuth = true
-                }, ct);
+            user = await userRepository.AddAsync(new User { Name = name, Email = email, HasGoogleAuth = true }, ct);
 
-            await googleUserRepository.AddAsync(
-                new GoogleUser
-                {
-                    Id = user.Id,
-                    GoogleId = googleId
-                }, ct);
+            await googleUserRepository.AddAsync(new GoogleUser { Id = user.Id, GoogleId = googleId }, ct);
         }
         else
         {

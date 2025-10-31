@@ -90,7 +90,8 @@ public class TokenService(
             _authenticationOptions.Audience,
             claims,
             expires: DateTime.UtcNow.AddMinutes(_authenticationOptions.TokenExpiresInMinutes),
-            signingCredentials: credentials);
+            signingCredentials: credentials
+        );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -121,6 +122,7 @@ public class TokenService(
                 Secure = context.Request.IsHttps,
                 SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(expiresInMinutes)
-            });
+            }
+        );
     }
 }

@@ -8,5 +8,5 @@ public class GoogleUser
 
     public DateTime CreateDate { get; set; } = DateTime.UtcNow;
 
-    public User User { get; set; }
+    public User? User { get; set; }
 }

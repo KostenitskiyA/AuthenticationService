@@ -34,63 +34,58 @@ public static class ApplicationExtensions
         var otelConfiguration = services.ConfigureOptions<OpenTelemetryConfiguration>(configuration);
 
         host.UseSerilog((_, loggerConfiguration) =>
-        {
-            loggerConfiguration
-                .MinimumLevel.Information()
-                .MinimumLevel.Override("System", LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                .Filter.ByExcluding(logEvent =>
-                    logEvent.Properties.ContainsKey("RequestPath") &&
-                    logEvent.Properties["RequestPath"].ToString().Contains("/metrics")
-                )
-                .Enrich.FromLogContext()
-                .WriteTo.Console()
-                .WriteTo.GrafanaLoki(
-                    otelConfiguration.LokiUrl,
-                    [new LokiLabel { Key = "service", Value = otelConfiguration.ServiceName }]
-                );
-        });
+            {
+                loggerConfiguration
+                    .MinimumLevel.Information()
+                    .MinimumLevel.Override("System", LogEventLevel.Warning)
+                    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                    .Filter.ByExcluding(logEvent =>
+                        logEvent.Properties.ContainsKey("RequestPath") &&
+                        logEvent.Properties["RequestPath"].ToString().Contains("/metrics"))
+                    .Enrich.FromLogContext().WriteTo.Console().WriteTo.GrafanaLoki(
+                        otelConfiguration.LokiUrl,
+                        [new LokiLabel { Key = "service", Value = otelConfiguration.ServiceName }]
+                    );
+            }
+        );
 
         services.AddOpenTelemetry()
             .WithMetrics(metricsProvider =>
             {
                 metricsProvider
-                    .SetResourceBuilder(
-                        ResourceBuilder
-                            .CreateDefault()
-                            .AddService(otelConfiguration.ServiceName))
+                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
                     .AddRuntimeInstrumentation()
                     .AddProcessInstrumentation()
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(options =>
-                    {
-                        options.Endpoint = new Uri(otelConfiguration.OtelUrl);
-                        options.Protocol = OtlpExportProtocol.Grpc;
-                    });
+                        {
+                            options.Endpoint = new Uri(otelConfiguration.OtelUrl);
+                            options.Protocol = OtlpExportProtocol.Grpc;
+                        }
+                    );
             })
             .WithTracing(tracerProvider =>
             {
                 tracerProvider
-                    .SetResourceBuilder(
-                        ResourceBuilder
-                            .CreateDefault()
-                            .AddService(otelConfiguration.ServiceName))
+                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
                     .AddSource(otelConfiguration.ServiceName)
                     .AddAspNetCoreInstrumentation(options =>
-                    {
-                        options.Filter = httpContext =>
-                            !httpContext.Request.Path.Value!.StartsWith("/metrics") &&
-                            !HttpMethods.IsOptions(httpContext.Request.Method);
-                    })
+                        {
+                            options.Filter = httpContext =>
+                                !httpContext.Request.Path.Value!.StartsWith("/metrics") &&
+                                !HttpMethods.IsOptions(httpContext.Request.Method);
+                        })
                     .AddEntityFrameworkCoreInstrumentation()
                     .AddNpgsql()
                     .AddOtlpExporter(options =>
-                    {
-                        options.Endpoint = new Uri(otelConfiguration.OtelUrl);
-                        options.Protocol = OtlpExportProtocol.Grpc;
-                    });
-            });
+                        {
+                            options.Endpoint = new Uri(otelConfiguration.OtelUrl);
+                            options.Protocol = OtlpExportProtocol.Grpc;
+                        }
+                    );
+            }
+        );
 
         return services;
     }
@@ -121,8 +116,10 @@ public static class ApplicationExtensions
             {
                 options.DefaultScheme = AuthenticationSchemes.Token;
                 options.DefaultChallengeScheme = AuthenticationSchemes.Google;
-            })
-            .AddJwtBearer(AuthenticationSchemes.Token, options =>
+            }
+        ).AddJwtBearer(
+            AuthenticationSchemes.Token,
+            options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
@@ -146,15 +143,17 @@ public static class ApplicationExtensions
                         return Task.CompletedTask;
                     }
                 };
-            })
-            .AddCookie(AuthenticationSchemes.GoogleCookie)
-            .AddGoogle(AuthenticationSchemes.Google, options =>
+            }
+        ).AddCookie(AuthenticationSchemes.GoogleCookie).AddGoogle(
+            AuthenticationSchemes.Google,
+            options =>
             {
                 options.ClientId = googleAuthenticationOptions.ClientId;
                 options.ClientSecret = googleAuthenticationOptions.ClientSecret;
                 options.CallbackPath = "/google-callback";
                 options.SignInScheme = AuthenticationSchemes.GoogleCookie;
-            });
+            }
+        );
 
         return services;
     }

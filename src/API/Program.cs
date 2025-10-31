@@ -14,18 +14,21 @@ builder.Services.AddAuthentication(configuration);
 builder.Services.AddServices();
 
 if (builder.Environment.IsDevelopment() || builder.Environment.IsStaging())
+{
     builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("Localhost", policy =>
         {
-            policy.SetIsOriginAllowed(origin =>
-                    origin.StartsWith("http://localhost") ||
-                    origin.StartsWith("https://localhost"))
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        });
-    });
+            options.AddPolicy(
+                "Localhost",
+                policy =>
+                {
+                    policy.SetIsOriginAllowed(origin =>
+                        origin.StartsWith("http://localhost") || origin.StartsWith("https://localhost")
+                    ).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+                }
+            );
+        }
+    );
+}
 
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
@@ -50,3 +53,5 @@ app.UseMiddleware<LoggerMiddleware>();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

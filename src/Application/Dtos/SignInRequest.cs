@@ -22,7 +22,9 @@ public sealed class SignInRequestValidator : AbstractValidator<SignInRequest>
             .NotEmpty()
             .EmailAddress()
             .MustAsync(async (email, ct) =>
-                !await userRepository.IsExistsAsync(user => user.Email == email.Trim().ToLowerInvariant(), ct))
+                !await userRepository.IsExistsAsync(
+                    user => user.Email == email.Trim().ToLowerInvariant(),
+                    ct))
             .WithMessage("User with this email already exists");
 
         RuleFor(x => x.Name)

@@ -10,9 +10,9 @@ public record User
 
     public string? PasswordHash { get; set; }
 
+    public DateTime CreateDate { get; } = DateTime.UtcNow;
+
     public bool HasGoogleAuth { get; set; }
 
-    public DateTime CreateDate { get; set; } = DateTime.UtcNow;
-
-    public GoogleUser GoogleUser { get; set; }
+    public GoogleUser? GoogleUser { get; set; }
 }
