@@ -36,7 +36,7 @@ public class TokenService(
             _authenticationOptions.RefreshTokenExpiresInMinutes
         );
 
-        await refreshTokenStorage.StoreRefreshTokenAsync(
+        await refreshTokenStorage.SaveRefreshTokenAsync(
             refreshToken,
             user.Id,
             TimeSpan.FromMinutes(_authenticationOptions.RefreshTokenExpiresInMinutes)
@@ -50,8 +50,7 @@ public class TokenService(
         if (string.IsNullOrEmpty(refreshToken))
             return;
 
-        var userId = await refreshTokenStorage.GetUserIdByRefreshTokenAsync(refreshToken, ct);
-
+        var userId = await refreshTokenStorage.GetUserIdByRefreshTokenAsync(refreshToken);
         await RevokeTokensAsync(context);
 
         if (userId.HasValue)
@@ -78,8 +77,7 @@ public class TokenService(
 
     private string GenerateJwt(User user)
     {
-        var claims = CreateUserClaims(user)
-            .Claims;
+        var claims = CreateUserClaims(user).Claims;
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_authenticationOptions.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

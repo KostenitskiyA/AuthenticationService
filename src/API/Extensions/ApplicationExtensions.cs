@@ -118,10 +118,10 @@ public static class ApplicationExtensions
         var googleAuthenticationOptions = authenticationConfiguration.GoogleAuthenticationOptions;
 
         services.AddAuthentication(options =>
-                {
-                    options.DefaultScheme = AuthenticationSchemes.Token;
-                    options.DefaultChallengeScheme = AuthenticationSchemes.Google;
-                })
+            {
+                options.DefaultScheme = AuthenticationSchemes.Token;
+                options.DefaultChallengeScheme = AuthenticationSchemes.Google;
+            })
             .AddJwtBearer(
                 AuthenticationSchemes.Token,
                 options =>
@@ -169,10 +169,8 @@ public static class ApplicationExtensions
     {
         services.AddTransient<IUserRepository, UserRepository>();
         services.AddTransient<IGoogleUserRepository, GoogleUserRepository>();
-
         services.AddTransient<IPasswordHasher, BCryptPasswordHasher>();
         services.AddTransient<IRefreshTokenStorage, RedisRefreshTokenStorage>();
-
         services.AddTransient<ITokenService, TokenService>();
         services.AddTransient<IUserService, UserService>();
 
