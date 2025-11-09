@@ -13,8 +13,7 @@ public class UserController(IUserService userService) : ControllerBase
     [HttpDelete("delete")]
     public async Task<ActionResult<Result>> DeleteAsync(CancellationToken ct)
     {
-        await userService.DeleteAsync(HttpContext, ct);
-
-        return Ok(Result.Success(HttpContext.TraceIdentifier));
+        await userService.DeleteAsync(ct);
+        return NoContent();
     }
 }

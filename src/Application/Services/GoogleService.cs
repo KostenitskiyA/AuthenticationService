@@ -9,13 +9,15 @@ using SystemClaimTypes = System.Security.Claims.ClaimTypes;
 namespace Application.Services;
 
 public class GoogleService(
+    IHttpContextAccessor httpContextAccessor,
     IUserRepository userRepository,
     IGoogleUserRepository googleUserRepository,
     ITokenService tokenService) : IGoogleService
 {
-    public async Task<User> SignUpAsync(HttpContext context, CancellationToken ct)
+    public async Task<User> SignUpAsync(CancellationToken ct)
     {
-        var result = await context.AuthenticateAsync(AuthenticationSchemes.Google);
+        var httpContext = httpContextAccessor.HttpContext!;
+        var result = await httpContext.AuthenticateAsync(AuthenticationSchemes.Google);
 
         if (!result.Succeeded || result.Principal is null)
             throw new DomainException("Google authentication failed");
@@ -42,8 +44,8 @@ public class GoogleService(
         }
 
         await userRepository.SaveChangesAsync(ct);
-        await tokenService.AppendTokensAsync(context, user);
-        context.Response.Cookies.Delete($".AspNetCore.{AuthenticationSchemes.GoogleCookie}");
+        await tokenService.AppendTokensAsync(user);
+        httpContext.Response.Cookies.Delete($".AspNetCore.{AuthenticationSchemes.GoogleCookie}");
 
         return user;
     }

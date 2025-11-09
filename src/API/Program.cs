@@ -8,6 +8,7 @@ var configuration = builder.Configuration;
 var healthChecksBuilder = builder.Services.AddHealthChecks();
 
 builder.AddSerilogAndOpenTelemetry(configuration);
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddRedis(configuration, healthChecksBuilder);
 builder.Services.AddDatabase(configuration, healthChecksBuilder);
 builder.Services.AddAuthentication(configuration);
@@ -22,8 +23,7 @@ if (builder.Environment.IsDevelopment() || builder.Environment.IsStaging())
                 policy =>
                 {
                     policy.SetIsOriginAllowed(origin =>
-                            origin.StartsWith("http://localhost") || origin.StartsWith("https://localhost")
-                        )
+                            origin.StartsWith("http://localhost") || origin.StartsWith("https://localhost"))
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();

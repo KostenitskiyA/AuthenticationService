@@ -16,21 +16,28 @@ namespace Application.Services;
 
 public class TokenService(
     IOptionsMonitor<AuthenticationConfiguration> authenticationConfigurationMonitor,
+    IHttpContextAccessor httpContextAccessor,
     IUserRepository userRepository,
     IRefreshTokenStorage refreshTokenStorage) : ITokenService
 {
     private readonly AuthenticationOptions _authenticationOptions =
         authenticationConfigurationMonitor.CurrentValue.AuthenticationOptions;
 
-    public async Task AppendTokensAsync(HttpContext context, User user)
+    public async Task AppendTokensAsync(User user)
     {
+        var httpContext = httpContextAccessor.HttpContext!;
+
         var token = GenerateJwt(user);
         var refreshToken = Guid.NewGuid()
             .ToString("N");
 
-        AppendTokenCookie(context, AuthenticationSchemes.Token, token, _authenticationOptions.TokenExpiresInMinutes);
         AppendTokenCookie(
-            context,
+            httpContext,
+            AuthenticationSchemes.Token,
+            token,
+            _authenticationOptions.TokenExpiresInMinutes);
+        AppendTokenCookie(
+            httpContext,
             AuthenticationSchemes.RefreshToken,
             refreshToken,
             _authenticationOptions.RefreshTokenExpiresInMinutes
@@ -43,15 +50,16 @@ public class TokenService(
         );
     }
 
-    public async Task RefreshTokensAsync(HttpContext context, CancellationToken ct)
+    public async Task RefreshTokensAsync(CancellationToken ct)
     {
-        var refreshToken = context.Request.Cookies[AuthenticationSchemes.RefreshToken];
+        var httpContext = httpContextAccessor.HttpContext!;
+        var refreshToken = httpContext.Request.Cookies[AuthenticationSchemes.RefreshToken];
 
         if (string.IsNullOrEmpty(refreshToken))
             return;
 
         var userId = await refreshTokenStorage.GetUserIdByRefreshTokenAsync(refreshToken);
-        await RevokeTokensAsync(context);
+        await RevokeTokensAsync();
 
         if (userId.HasValue)
         {
@@ -60,19 +68,20 @@ public class TokenService(
             if (user is null)
                 throw new EntityNotFoundException(nameof(User), userId.Value.ToString());
 
-            await AppendTokensAsync(context, user);
+            await AppendTokensAsync(user);
         }
     }
 
-    public async Task RevokeTokensAsync(HttpContext context)
+    public async Task RevokeTokensAsync()
     {
-        var refreshToken = context.Request.Cookies[AuthenticationSchemes.RefreshToken];
+        var httpContext = httpContextAccessor.HttpContext!;
+        var refreshToken = httpContext.Request.Cookies[AuthenticationSchemes.RefreshToken];
 
         if (!string.IsNullOrEmpty(refreshToken))
             await refreshTokenStorage.RemoveRefreshTokenAsync(refreshToken);
 
-        context.Response.Cookies.Delete(AuthenticationSchemes.Token);
-        context.Response.Cookies.Delete(AuthenticationSchemes.RefreshToken);
+        httpContext.Response.Cookies.Delete(AuthenticationSchemes.Token);
+        httpContext.Response.Cookies.Delete(AuthenticationSchemes.RefreshToken);
     }
 
     private string GenerateJwt(User user)

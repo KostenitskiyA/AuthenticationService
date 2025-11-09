@@ -8,7 +8,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GoogleController(IUserService userService) : ControllerBase
+public class GoogleController(IGoogleService googleService) : ControllerBase
 {
     [HttpGet("login")]
     public IActionResult LoginWithGoogle([FromQuery] string redirectUrl)
@@ -28,8 +28,7 @@ public class GoogleController(IUserService userService) : ControllerBase
     [HttpGet("callback")]
     public async Task<IActionResult> GoogleCallback([FromQuery] string redirectUrl, CancellationToken ct)
     {
-        await userService.GoogleSignUpAsync(HttpContext, ct);
-
+        await googleService.SignUpAsync(ct);
         return Redirect(redirectUrl);
     }
 }

@@ -14,12 +14,13 @@ using AuthenticationSchemes = Domain.Enums.AuthenticationSchemes;
 namespace Application.Services;
 
 public class UserService(
+    IHttpContextAccessor httpContextAccessor,
     IUserRepository userRepository,
     IGoogleUserRepository googleUserRepository,
     ITokenService tokenService,
     IPasswordHasher passwordHasher) : IUserService
 {
-    public async Task<User> SignUpAsync(HttpContext context, SignInRequest request, CancellationToken ct)
+    public async Task<User> SignUpAsync(SignInRequest request, CancellationToken ct)
     {
         var validator = new SignInRequestValidator(userRepository);
         await validator.ValidateAndThrowAsync(request, ct);
@@ -36,16 +37,17 @@ public class UserService(
             },
             ct
         );
-        await userRepository.SaveChangesAsync(ct);
 
-        await tokenService.AppendTokensAsync(context, user);
+        await userRepository.SaveChangesAsync(ct);
+        await tokenService.AppendTokensAsync(user);
 
         return user;
     }
 
-    public async Task<User> GoogleSignUpAsync(HttpContext context, CancellationToken ct)
+    public async Task<User> GoogleSignUpAsync(CancellationToken ct)
     {
-        var result = await context.AuthenticateAsync(AuthenticationSchemes.Google);
+        var httpContext = httpContextAccessor.HttpContext!;
+        var result = await httpContext.AuthenticateAsync(AuthenticationSchemes.Google);
 
         if (!result.Succeeded || result.Principal is null)
             throw new DomainException("Google authentication failed");
@@ -83,13 +85,13 @@ public class UserService(
         }
 
         await userRepository.SaveChangesAsync(ct);
-        await tokenService.AppendTokensAsync(context, user);
-        context.Response.Cookies.Delete($".AspNetCore.{AuthenticationSchemes.GoogleCookie}");
+        await tokenService.AppendTokensAsync(user);
+        httpContext.Response.Cookies.Delete($".AspNetCore.{AuthenticationSchemes.GoogleCookie}");
 
         return user;
     }
 
-    public async Task<User> LogInAsync(HttpContext context, LogInRequest request, CancellationToken ct)
+    public async Task<User> LogInAsync(LogInRequest request, CancellationToken ct)
     {
         var validator = new LogInRequestValidator();
         await validator.ValidateAndThrowAsync(request, ct);
@@ -102,17 +104,18 @@ public class UserService(
         if (string.IsNullOrEmpty(user.PasswordHash) || !passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
             throw new DomainException($"User {request.Email} password invalid");
 
-        await tokenService.RevokeTokensAsync(context);
-        await tokenService.AppendTokensAsync(context, user);
+        await tokenService.RevokeTokensAsync();
+        await tokenService.AppendTokensAsync(user);
 
         return user;
     }
 
-    public async Task DeleteAsync(HttpContext context, CancellationToken ct)
+    public async Task DeleteAsync(CancellationToken ct)
     {
-        var email = context.User.FindFirstValue(SystemClaimTypes.Email);
+        var httpContext = httpContextAccessor.HttpContext!;
+        var email = httpContext.User.FindFirstValue(SystemClaimTypes.Email);
 
-        if (context.User.Identity is not { IsAuthenticated: true } || string.IsNullOrEmpty(email))
+        if (httpContext.User.Identity is not { IsAuthenticated: true } || string.IsNullOrEmpty(email))
             throw new NotAuthorizedException();
 
         var user = await userRepository.GetByEmailAsync(email, ct);
@@ -126,6 +129,6 @@ public class UserService(
             googleUserRepository.Delete(user.GoogleUser);
 
         await userRepository.SaveChangesAsync(ct);
-        await tokenService.RevokeTokensAsync(context);
+        await tokenService.RevokeTokensAsync();
     }
 }
