@@ -22,8 +22,11 @@ if (builder.Environment.IsDevelopment() || builder.Environment.IsStaging())
                 policy =>
                 {
                     policy.SetIsOriginAllowed(origin =>
-                        origin.StartsWith("http://localhost") || origin.StartsWith("https://localhost")
-                    ).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+                            origin.StartsWith("http://localhost") || origin.StartsWith("https://localhost")
+                        )
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 }
             );
         }

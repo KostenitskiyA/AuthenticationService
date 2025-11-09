@@ -2,7 +2,7 @@
 
 public record GoogleAuthenticationOptions
 {
-    public required string ClientId { get; init; }
+    public required string ClientId { get; set; }
 
-    public required string ClientSecret { get; init; }
+    public required string ClientSecret { get; set; }
 }

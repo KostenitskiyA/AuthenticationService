@@ -9,7 +9,6 @@ using Domain.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Redis.Interfaces;
 using AuthenticationOptions = Application.Options.AuthenticationOptions;
 using ClaimTypes = Domain.Enums.ClaimTypes;
 
@@ -18,8 +17,7 @@ namespace Application.Services;
 public class TokenService(
     IOptionsMonitor<AuthenticationConfiguration> authenticationConfigurationMonitor,
     IUserRepository userRepository,
-    IRedisService redisService)
-    : ITokenService
+    IRefreshTokenStorage refreshTokenStorage) : ITokenService
 {
     private readonly AuthenticationOptions _authenticationOptions =
         authenticationConfigurationMonitor.CurrentValue.AuthenticationOptions;
@@ -27,23 +25,22 @@ public class TokenService(
     public async Task AppendTokensAsync(HttpContext context, User user)
     {
         var token = GenerateJwt(user);
-        var refreshToken = Guid.NewGuid().ToString("N");
+        var refreshToken = Guid.NewGuid()
+            .ToString("N");
 
-        AppendTokenCookie(
-            context,
-            AuthenticationSchemes.Token,
-            token,
-            _authenticationOptions.TokenExpiresInMinutes);
+        AppendTokenCookie(context, AuthenticationSchemes.Token, token, _authenticationOptions.TokenExpiresInMinutes);
         AppendTokenCookie(
             context,
             AuthenticationSchemes.RefreshToken,
             refreshToken,
-            _authenticationOptions.RefreshTokenExpiresInMinutes);
+            _authenticationOptions.RefreshTokenExpiresInMinutes
+        );
 
-        await redisService.SetStringAsync(
-            $"authentication:refresh:{refreshToken}",
+        await refreshTokenStorage.StoreRefreshTokenAsync(
+            refreshToken,
             user.Id,
-            expireTime: TimeSpan.FromMinutes(_authenticationOptions.RefreshTokenExpiresInMinutes));
+            TimeSpan.FromMinutes(_authenticationOptions.RefreshTokenExpiresInMinutes)
+        );
     }
 
     public async Task RefreshTokensAsync(HttpContext context, CancellationToken ct)
@@ -53,16 +50,16 @@ public class TokenService(
         if (string.IsNullOrEmpty(refreshToken))
             return;
 
-        var userId = await redisService.GetStringAsync<string>($"authentication:refresh:{refreshToken}");
+        var userId = await refreshTokenStorage.GetUserIdByRefreshTokenAsync(refreshToken, ct);
 
         await RevokeTokensAsync(context);
 
-        if (Guid.TryParse(userId, out var id))
+        if (userId.HasValue)
         {
-            var user = await userRepository.GetByIdAsync(id, ct);
+            var user = await userRepository.GetByIdAsync(userId.Value, ct);
 
             if (user is null)
-                throw new EntityNotFoundException(nameof(User), userId);
+                throw new EntityNotFoundException(nameof(User), userId.Value.ToString());
 
             await AppendTokensAsync(context, user);
         }
@@ -73,7 +70,7 @@ public class TokenService(
         var refreshToken = context.Request.Cookies[AuthenticationSchemes.RefreshToken];
 
         if (!string.IsNullOrEmpty(refreshToken))
-            await redisService.DeleteKeyAsync($"authentication:refresh:{refreshToken}");
+            await refreshTokenStorage.RemoveRefreshTokenAsync(refreshToken);
 
         context.Response.Cookies.Delete(AuthenticationSchemes.Token);
         context.Response.Cookies.Delete(AuthenticationSchemes.RefreshToken);
@@ -81,7 +78,8 @@ public class TokenService(
 
     private string GenerateJwt(User user)
     {
-        var claims = CreateUserClaims(user).Claims;
+        var claims = CreateUserClaims(user)
+            .Claims;
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_authenticationOptions.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

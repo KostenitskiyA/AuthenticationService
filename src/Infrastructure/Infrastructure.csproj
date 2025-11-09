@@ -18,6 +18,8 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="BCrypt.Net" Version="0.1.0"/>
+        <PackageReference Include="CAM.Redis" Version="0.0.6"/>
     </ItemGroup>
 
     <ItemGroup>

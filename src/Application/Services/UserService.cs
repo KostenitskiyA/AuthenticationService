@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Application.Dtos;
 using Application.Interfaces;
+using Application.Validators;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
@@ -8,14 +9,15 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using SystemClaimTypes = System.Security.Claims.ClaimTypes;
+using AuthenticationSchemes = Domain.Enums.AuthenticationSchemes;
 
 namespace Application.Services;
 
 public class UserService(
     IUserRepository userRepository,
     IGoogleUserRepository googleUserRepository,
-    ITokenService tokenService)
-    : IUserService
+    ITokenService tokenService,
+    IPasswordHasher passwordHasher) : IUserService
 {
     public async Task<User> SignUpAsync(HttpContext context, SignInRequest request, CancellationToken ct)
     {
@@ -25,10 +27,11 @@ public class UserService(
         var user = await userRepository.AddAsync(
             new User
             {
-                Email = request.Email.Trim().ToLowerInvariant(),
+                Email = request.Email.Trim()
+                    .ToLowerInvariant(),
                 Name = request.Name,
                 PasswordHash = !string.IsNullOrEmpty(request.Password)
-                    ? BCrypt.Net.BCrypt.HashPassword(request.Password)
+                    ? passwordHasher.HashPassword(request.Password)
                     : string.Empty
             },
             ct
@@ -65,8 +68,18 @@ public class UserService(
         }
         else
         {
-            user.GoogleUser = new GoogleUser { Id = user.Id, GoogleId = googleId };
+            if (user.GoogleUser is null)
+            {
+                await googleUserRepository.AddAsync(new GoogleUser { Id = user.Id, GoogleId = googleId }, ct);
+            }
+            else
+            {
+                user.GoogleUser.GoogleId = googleId;
+                googleUserRepository.Update(user.GoogleUser);
+            }
+
             user.HasGoogleAuth = true;
+            userRepository.Update(user);
         }
 
         await userRepository.SaveChangesAsync(ct);
@@ -78,7 +91,7 @@ public class UserService(
 
     public async Task<User> LogInAsync(HttpContext context, LogInRequest request, CancellationToken ct)
     {
-        var validator = new LogInRequestValidator(userRepository);
+        var validator = new LogInRequestValidator();
         await validator.ValidateAndThrowAsync(request, ct);
 
         var user = await userRepository.GetByEmailAsync(request.Email, ct);
@@ -86,10 +99,11 @@ public class UserService(
         if (user is null)
             throw new DomainException($"User {request.Email} not found");
 
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (string.IsNullOrEmpty(user.PasswordHash) || !passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
             throw new DomainException($"User {request.Email} password invalid");
 
         await tokenService.RevokeTokensAsync(context);
+        await tokenService.AppendTokensAsync(context, user);
 
         return user;
     }
@@ -108,7 +122,7 @@ public class UserService(
 
         userRepository.Delete(user);
 
-        if (user.HasGoogleAuth)
+        if (user is { HasGoogleAuth: true, GoogleUser: not null })
             googleUserRepository.Delete(user.GoogleUser);
 
         await userRepository.SaveChangesAsync(ct);

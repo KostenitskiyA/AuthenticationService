@@ -6,7 +6,6 @@ using Domain.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
 using Serilog;
-using Results = API.Models.Results;
 
 namespace API.Middlewares;
 
@@ -22,7 +21,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next)
         var errorDetails = details?.Select(detail => new ValidationError(detail.PropertyName, detail.ErrorMessage))
             .ToArray() ?? [];
 
-        var result = Results.Error(context, new Error(statusCode, message, errorDetails));
+        var result = Result.Failure(context.TraceIdentifier, new Error(statusCode, message, errorDetails));
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
@@ -47,29 +46,29 @@ public class ExceptionHandlingMiddleware(RequestDelegate next)
         {
             await next(context);
         }
-        catch (NotAuthorizedException ex)
+        catch (NotAuthorizedException exception)
         {
-            Log.Information("{TraceId} - {Message}", traceId, ex.Message);
-            await HandleExceptionAsync(context, ex.StatusCode, ex.Message, null, ct);
+            Log.Information("{TraceId} - {Message}", traceId, exception.Message);
+            await HandleExceptionAsync(context, exception.StatusCode, exception.Message, null, ct);
         }
-        catch (ValidationException ex)
+        catch (ValidationException exception)
         {
-            Log.Information("{TraceId} - {Message}", traceId, ex.Message);
-            await HandleExceptionAsync(context, HttpStatusCode.BadRequest, nameof(ValidationError), ex.Errors, ct);
+            Log.Information("{TraceId} - {Message}", traceId, exception.Message);
+            await HandleExceptionAsync(context, HttpStatusCode.BadRequest, "Validation error", exception.Errors, ct);
         }
-        catch (EntityNotFoundException ex)
+        catch (EntityNotFoundException exception)
         {
-            Log.Information("{TraceId} - {Message}", traceId, ex.Message);
-            await HandleExceptionAsync(context, ex.StatusCode, ex.Message, null, ct);
+            Log.Information("{TraceId} - {Message}", traceId, exception.Message);
+            await HandleExceptionAsync(context, exception.StatusCode, exception.Message, null, ct);
         }
-        catch (DomainException ex)
+        catch (DomainException exception)
         {
-            Log.Information("{TraceId} - {Message}", traceId, ex.Message);
-            await HandleExceptionAsync(context, ex.StatusCode, ex.Message, null, ct);
+            Log.Information("{TraceId} - {Message}", traceId, exception.Message);
+            await HandleExceptionAsync(context, exception.StatusCode, exception.Message, null, ct);
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            Log.Error(ex, "{TraceId} - {Message}", traceId, "An unhandled exception occurred");
+            Log.Error(exception, "{TraceId} - {Message}", traceId, "An unhandled exception occurred");
             await HandleExceptionAsync(context, HttpStatusCode.InternalServerError, "Server error", null, ct);
         }
     }

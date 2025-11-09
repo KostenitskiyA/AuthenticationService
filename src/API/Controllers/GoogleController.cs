@@ -16,7 +16,7 @@ public class GoogleController(IUserService userService) : ControllerBase
         var properties = new AuthenticationProperties
         {
             RedirectUri = QueryHelpers.AddQueryString(
-                Url.Action(nameof(GoogleCallback), "Authentication")!,
+                Url.Action(nameof(GoogleCallback), "Google")!,
                 "redirectUrl",
                 redirectUrl
             )

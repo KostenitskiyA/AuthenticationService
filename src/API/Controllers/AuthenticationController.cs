@@ -3,7 +3,6 @@ using Application.Dtos;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Results = API.Models.Results;
 
 namespace API.Controllers;
 
@@ -16,7 +15,7 @@ public class AuthenticationController(IUserService userService, ITokenService to
     {
         await userService.SignUpAsync(HttpContext, request, ct);
 
-        return Ok(Results.Ok(HttpContext));
+        return Ok(Result.Success(HttpContext.TraceIdentifier));
     }
 
     [HttpPost("login")]
@@ -24,7 +23,7 @@ public class AuthenticationController(IUserService userService, ITokenService to
     {
         await userService.LogInAsync(HttpContext, request, ct);
 
-        return Ok(Results.Ok(HttpContext));
+        return Ok(Result.Success(HttpContext.TraceIdentifier));
     }
 
     [Authorize]
@@ -33,9 +32,8 @@ public class AuthenticationController(IUserService userService, ITokenService to
     {
         await tokenService.RevokeTokensAsync(HttpContext);
 
-        return Ok(Results.Ok(HttpContext));
+        return NoContent();
     }
-
 
 
     [HttpPost("refresh")]
@@ -43,6 +41,6 @@ public class AuthenticationController(IUserService userService, ITokenService to
     {
         await tokenService.RefreshTokensAsync(HttpContext, ct);
 
-        return Ok(Results.Ok(HttpContext));
+        return Ok(Result.Success(HttpContext.TraceIdentifier));
     }
 }

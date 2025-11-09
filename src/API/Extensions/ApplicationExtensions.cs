@@ -4,6 +4,7 @@ using Application.Options;
 using Application.Services;
 using Infrastructure;
 using Infrastructure.Repositories;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,7 +17,6 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Grafana.Loki;
 using Share.Extensions;
-using Share.Interceptors;
 using Share.Options;
 using AuthenticationSchemes = Domain.Enums.AuthenticationSchemes;
 
@@ -35,14 +35,17 @@ public static class ApplicationExtensions
 
         host.UseSerilog((_, loggerConfiguration) =>
             {
-                loggerConfiguration
-                    .MinimumLevel.Information()
+                loggerConfiguration.MinimumLevel.Information()
                     .MinimumLevel.Override("System", LogEventLevel.Warning)
                     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                     .Filter.ByExcluding(logEvent =>
                         logEvent.Properties.ContainsKey("RequestPath") &&
-                        logEvent.Properties["RequestPath"].ToString().Contains("/metrics"))
-                    .Enrich.FromLogContext().WriteTo.Console().WriteTo.GrafanaLoki(
+                        logEvent.Properties["RequestPath"]
+                            .ToString()
+                            .Contains("/metrics"))
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console()
+                    .WriteTo.GrafanaLoki(
                         otelConfiguration.LokiUrl,
                         [new LokiLabel { Key = "service", Value = otelConfiguration.ServiceName }]
                     );
@@ -51,41 +54,43 @@ public static class ApplicationExtensions
 
         services.AddOpenTelemetry()
             .WithMetrics(metricsProvider =>
-            {
-                metricsProvider
-                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
-                    .AddRuntimeInstrumentation()
-                    .AddProcessInstrumentation()
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddOtlpExporter(options =>
-                        {
-                            options.Endpoint = new Uri(otelConfiguration.OtelUrl);
-                            options.Protocol = OtlpExportProtocol.Grpc;
-                        }
-                    );
-            })
+                {
+                    metricsProvider.SetResourceBuilder(
+                            ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
+                        .AddRuntimeInstrumentation()
+                        .AddProcessInstrumentation()
+                        .AddAspNetCoreInstrumentation()
+                        .AddHttpClientInstrumentation()
+                        .AddOtlpExporter(options =>
+                            {
+                                options.Endpoint = new Uri(otelConfiguration.OtelUrl);
+                                options.Protocol = OtlpExportProtocol.Grpc;
+                            }
+                        );
+                }
+            )
             .WithTracing(tracerProvider =>
-            {
-                tracerProvider
-                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
-                    .AddSource(otelConfiguration.ServiceName)
-                    .AddAspNetCoreInstrumentation(options =>
-                        {
-                            options.Filter = httpContext =>
-                                !httpContext.Request.Path.Value!.StartsWith("/metrics") &&
-                                !HttpMethods.IsOptions(httpContext.Request.Method);
-                        })
-                    .AddEntityFrameworkCoreInstrumentation()
-                    .AddNpgsql()
-                    .AddOtlpExporter(options =>
-                        {
-                            options.Endpoint = new Uri(otelConfiguration.OtelUrl);
-                            options.Protocol = OtlpExportProtocol.Grpc;
-                        }
-                    );
-            }
-        );
+                {
+                    tracerProvider.SetResourceBuilder(
+                            ResourceBuilder.CreateDefault().AddService(otelConfiguration.ServiceName))
+                        .AddSource(otelConfiguration.ServiceName)
+                        .AddAspNetCoreInstrumentation(options =>
+                            {
+                                options.Filter = httpContext =>
+                                    !httpContext.Request.Path.Value!.StartsWith("/metrics") &&
+                                    !HttpMethods.IsOptions(httpContext.Request.Method);
+                            }
+                        )
+                        .AddEntityFrameworkCoreInstrumentation()
+                        .AddNpgsql()
+                        .AddOtlpExporter(options =>
+                            {
+                                options.Endpoint = new Uri(otelConfiguration.OtelUrl);
+                                options.Protocol = OtlpExportProtocol.Grpc;
+                            }
+                        );
+                }
+            );
 
         return services;
     }
@@ -113,57 +118,63 @@ public static class ApplicationExtensions
         var googleAuthenticationOptions = authenticationConfiguration.GoogleAuthenticationOptions;
 
         services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = AuthenticationSchemes.Token;
-                options.DefaultChallengeScheme = AuthenticationSchemes.Google;
-            }
-        ).AddJwtBearer(
-            AuthenticationSchemes.Token,
-            options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = authenticationOptions.Issuer,
-                    ValidAudience = authenticationOptions.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authenticationOptions.Key)),
-                    ClockSkew = TimeSpan.Zero
-                };
-
-                options.Events = new JwtBearerEvents
+                    options.DefaultScheme = AuthenticationSchemes.Token;
+                    options.DefaultChallengeScheme = AuthenticationSchemes.Google;
+                })
+            .AddJwtBearer(
+                AuthenticationSchemes.Token,
+                options =>
                 {
-                    OnMessageReceived = context =>
+                    options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        if (context.Request.Cookies.TryGetValue(AuthenticationSchemes.Token, out var token))
-                            context.Token = token;
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = authenticationOptions.Issuer,
+                        ValidAudience = authenticationOptions.Audience,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authenticationOptions.Key)),
+                        ClockSkew = TimeSpan.Zero
+                    };
 
-                        return Task.CompletedTask;
-                    }
-                };
-            }
-        ).AddCookie(AuthenticationSchemes.GoogleCookie).AddGoogle(
-            AuthenticationSchemes.Google,
-            options =>
-            {
-                options.ClientId = googleAuthenticationOptions.ClientId;
-                options.ClientSecret = googleAuthenticationOptions.ClientSecret;
-                options.CallbackPath = "/google-callback";
-                options.SignInScheme = AuthenticationSchemes.GoogleCookie;
-            }
-        );
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            if (context.Request.Cookies.TryGetValue(AuthenticationSchemes.Token, out var token))
+                                context.Token = token;
+
+                            return Task.CompletedTask;
+                        }
+                    };
+                }
+            )
+            .AddCookie(AuthenticationSchemes.GoogleCookie)
+            .AddGoogle(
+                AuthenticationSchemes.Google,
+                options =>
+                {
+                    options.ClientId = googleAuthenticationOptions.ClientId;
+                    options.ClientSecret = googleAuthenticationOptions.ClientSecret;
+                    options.CallbackPath = "/google-callback";
+                    options.SignInScheme = AuthenticationSchemes.GoogleCookie;
+                }
+            );
 
         return services;
     }
 
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
-        services.AddTransient<IUserRepository, UserRepository, TracingInterceptor>();
-        services.AddTransient<IGoogleUserRepository, GoogleUserRepository, TracingInterceptor>();
-        services.AddTransient<ITokenService, TokenService, TracingInterceptor>();
-        services.AddTransient<IUserService, UserService, TracingInterceptor>();
+        services.AddTransient<IUserRepository, UserRepository>();
+        services.AddTransient<IGoogleUserRepository, GoogleUserRepository>();
+
+        services.AddTransient<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddTransient<IRefreshTokenStorage, RedisRefreshTokenStorage>();
+
+        services.AddTransient<ITokenService, TokenService>();
+        services.AddTransient<IUserService, UserService>();
 
         return services;
     }

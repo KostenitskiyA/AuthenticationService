@@ -2,7 +2,6 @@ using API.Models;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Results = Microsoft.AspNetCore.Http.Results;
 
 namespace API.Controllers;
 
@@ -16,6 +15,6 @@ public class UserController(IUserService userService) : ControllerBase
     {
         await userService.DeleteAsync(HttpContext, ct);
 
-        return Ok(Results.Ok(HttpContext));
+        return Ok(Result.Success(HttpContext.TraceIdentifier));
     }
 }
